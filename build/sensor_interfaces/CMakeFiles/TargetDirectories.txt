@@ -1,0 +1,9 @@
+/home/malik/Projects/ilumo_ws/build/sensor_interfaces/CMakeFiles/uninstall.dir
+/home/malik/Projects/ilumo_ws/build/sensor_interfaces/CMakeFiles/sensor_interfaces_uninstall.dir
+/home/malik/Projects/ilumo_ws/build/sensor_interfaces/CMakeFiles/test.dir
+/home/malik/Projects/ilumo_ws/build/sensor_interfaces/CMakeFiles/edit_cache.dir
+/home/malik/Projects/ilumo_ws/build/sensor_interfaces/CMakeFiles/rebuild_cache.dir
+/home/malik/Projects/ilumo_ws/build/sensor_interfaces/CMakeFiles/list_install_components.dir
+/home/malik/Projects/ilumo_ws/build/sensor_interfaces/CMakeFiles/install.dir
+/home/malik/Projects/ilumo_ws/build/sensor_interfaces/CMakeFiles/install/local.dir
+/home/malik/Projects/ilumo_ws/build/sensor_interfaces/CMakeFiles/install/strip.dir
