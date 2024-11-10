@@ -1,6 +1,0 @@
-Invoking command in '/home/malik/Projects/ilumo_ws/build/sensor_interfaces': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake /home/malik/Projects/ilumo_ws/src/sensor_interfaces -DCMAKE_INSTALL_PREFIX=/home/malik/Projects/ilumo_ws/install/sensor_interfaces
-Invoked command in '/home/malik/Projects/ilumo_ws/build/sensor_interfaces' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake /home/malik/Projects/ilumo_ws/src/sensor_interfaces -DCMAKE_INSTALL_PREFIX=/home/malik/Projects/ilumo_ws/install/sensor_interfaces
-Invoking command in '/home/malik/Projects/ilumo_ws/build/sensor_interfaces': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --build /home/malik/Projects/ilumo_ws/build/sensor_interfaces -- -j24 -l24
-Invoked command in '/home/malik/Projects/ilumo_ws/build/sensor_interfaces' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --build /home/malik/Projects/ilumo_ws/build/sensor_interfaces -- -j24 -l24
-Invoking command in '/home/malik/Projects/ilumo_ws/build/sensor_interfaces': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --install /home/malik/Projects/ilumo_ws/build/sensor_interfaces
-Invoked command in '/home/malik/Projects/ilumo_ws/build/sensor_interfaces' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --install /home/malik/Projects/ilumo_ws/build/sensor_interfaces
