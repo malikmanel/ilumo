@@ -1,6 +1,6 @@
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/string.hpp>
-#include <blickfeld/scanner.h>
+// #include <blickfeld/scanner.h>
 
 class SimplePublisher : public rclcpp::Node
 {

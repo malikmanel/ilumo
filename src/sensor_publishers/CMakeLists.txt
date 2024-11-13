@@ -9,21 +9,23 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
-find_package(blickfeld REQUIRED)
+# find_package(blickfeld REQUIRED)
 
-add_executable(lidar_interface src/lidar_interface.cpp)
-ament_target_dependencies(lidar_interface rclcpp std_msgs sensor_msgs blickfeld)
+include_directories(include)
 
-add_executable(stereo_camera_interface src/stereo_camera_interface.cpp)
-ament_target_dependencies(stereo_camera_interface rclcpp std_msgs sensor_msgs)
+add_executable(lidar_publisher src/lidar_publisher.cpp)
+ament_target_dependencies(lidar_publisher rclcpp std_msgs sensor_msgs)
 
-add_executable(thermal_camera_interface src/thermal_camera_interface.cpp)
-ament_target_dependencies(thermal_camera_interface rclcpp std_msgs sensor_msgs)
+add_executable(stereo_camera_publisher src/stereo_camera_publisher.cpp)
+ament_target_dependencies(stereo_camera_publisher rclcpp std_msgs sensor_msgs)
+
+add_executable(thermal_camera_publisher src/thermal_camera_publisher.cpp)
+ament_target_dependencies(thermal_camera_publisher rclcpp std_msgs sensor_msgs)
 
 install(TARGETS
-  lidar_interface
-  stereo_camera_interface
-  thermal_camera_interface
+  lidar_publisher
+  stereo_camera_publisher
+  thermal_camera_publisher
   DESTINATION lib/${PROJECT_NAME}
 )
 

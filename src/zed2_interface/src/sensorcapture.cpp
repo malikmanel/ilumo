@@ -18,11 +18,11 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-#include "sensorcapture.hpp"
+#include "zed2_interface/sensorcapture.hpp"
 
 #ifdef VIDEO_MOD_AVAILABLE
 
-#include "videocapture.hpp"
+#include "zed2_interface/videocapture.hpp"
 #endif
 
 #include <sstream>
