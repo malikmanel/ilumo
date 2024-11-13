@@ -13,6 +13,12 @@ public:
 
 
 private:
+    void imageCallback();
+    void imuCallback();
+    void magnetometerCallback();
+    void envirdataCallback();
+    void cameratempCallback();
+
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr left_image_pub_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr right_image_pub_;
     rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub_;

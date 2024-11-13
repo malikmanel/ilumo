@@ -8,16 +8,17 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(blickfeld REQUIRED)
 
 add_executable(lidar_interface src/lidar_interface.cpp)
-ament_target_dependencies(lidar_interface rclcpp std_msgs blickfeld)
+ament_target_dependencies(lidar_interface rclcpp std_msgs sensor_msgs blickfeld)
 
 add_executable(stereo_camera_interface src/stereo_camera_interface.cpp)
-ament_target_dependencies(stereo_camera_interface rclcpp std_msgs)
+ament_target_dependencies(stereo_camera_interface rclcpp std_msgs sensor_msgs)
 
 add_executable(thermal_camera_interface src/thermal_camera_interface.cpp)
-ament_target_dependencies(thermal_camera_interface rclcpp std_msgs)
+ament_target_dependencies(thermal_camera_interface rclcpp std_msgs sensor_msgs)
 
 install(TARGETS
   lidar_interface
