@@ -21,6 +21,7 @@
 #include "zed2_interface/videocapture.hpp"
 
 #ifdef SENSORS_MOD_AVAILABLE
+
 #include "zed2_interface/sensorcapture.hpp"
 #endif
 

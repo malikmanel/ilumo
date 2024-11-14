@@ -9,15 +9,18 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(zed2_interface REQUIRED)
 # find_package(blickfeld REQUIRED)
 
-include_directories(include)
+include_directories(
+  include
+)
 
 add_executable(lidar_publisher src/lidar_publisher.cpp)
 ament_target_dependencies(lidar_publisher rclcpp std_msgs sensor_msgs)
 
 add_executable(stereo_camera_publisher src/stereo_camera_publisher.cpp)
-ament_target_dependencies(stereo_camera_publisher rclcpp std_msgs sensor_msgs)
+ament_target_dependencies(stereo_camera_publisher rclcpp std_msgs sensor_msgs zed2_interface)
 
 add_executable(thermal_camera_publisher src/thermal_camera_publisher.cpp)
 ament_target_dependencies(thermal_camera_publisher rclcpp std_msgs sensor_msgs)

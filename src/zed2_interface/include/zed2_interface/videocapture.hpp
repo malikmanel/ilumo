@@ -29,7 +29,7 @@
 
 #define LOG_SEP ","
 
-#ifdef VIDEO_MOD_AVAILABLE
+// #ifdef VIDEO_MOD_AVAILABLE
 
 #include "videocapture_def.hpp"
 
@@ -564,5 +564,5 @@ private:
  * extraction process.
  */
 
-#endif // VIDEOCAPTURE_HPP
+// #endif // VIDEOCAPTURE_HPP
 

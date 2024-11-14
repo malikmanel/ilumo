@@ -28,10 +28,10 @@
 #include <map>
 #include <mutex>
 
-#ifdef SENSORS_MOD_AVAILABLE
+// #ifdef SENSORS_MOD_AVAILABLE
 
 #include "sensorcapture_def.hpp"
-#include "hidapi.h"
+#include <hidapi/hidapi.h>
 
 namespace sl_oc {
 
@@ -319,4 +319,4 @@ private:
  * the VideoCapture class and the SensorCapture class.
  */
 
-#endif // SENSORCAPTURE_HPP
+// #endif // SENSORCAPTURE_HPP
