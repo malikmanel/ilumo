@@ -32,8 +32,8 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
 
   if( devs.size()==0 )
   {
-      std::cerr << "No available ZED Mini or ZED2 cameras" << std::endl;
-      return EXIT_FAILURE;
+      RCLCPP_ERROR(get_logger(), "No available ZED Mini or ZED2 cameras");
+      rclcpp::shutdown();
   }
   // <---- Get a list of available camera with sensor
 
@@ -41,10 +41,10 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
   if( !sens.initializeSensors( devs[0] ) )
   {
       std::cerr << "Connection failed" << std::endl;
-      return EXIT_FAILURE;
+      RCLCPP_ERROR(get_logger(), "Connection to ZED2 failed");
   }
 
-  std::cout << "Sensor Capture connected to camera sn: " << sens.getSerialNumber() << std::endl;
+  RCLCPP_INFO(get_logger(), "Sensor Capture connected to camera sn: " + sens.getSerialNumber());
   // <---- Inizialize the sensors
 
   // ----> Get FW version information
@@ -53,7 +53,7 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
 
   sens.getFirmwareVersion( fw_maior, fw_minor );
 
-  std::cout << " * Firmware version: " << std::to_string(fw_maior) << "." << std::to_string(fw_minor) << std::endl;
+  RCLCPP_INFO(get_logger(), " * Firmware version: " << std::to_string(fw_maior).c_str() << "." << std::to_string(fw_minor).c_str());
   // <---- Get FW version information
 
   // ----> Variables to calculate sensors frequencies
@@ -65,11 +65,6 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
 
   // if else statement here to ensure this only prints when true
   RCLCPP_INFO(get_logger(), "Stereo camera active and publishing.");
-}
-
-void StereoCameraPublisher::imageCallback()
-{
-
 }
 
 int main(int argc, char* argv[])
