@@ -16,12 +16,6 @@ public:
 
 
 private:
-    void imageCallback();
-    void imuCallback();
-    void magnetometerCallback();
-    void envirdataCallback();
-    void cameratempCallback();
-
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr left_image_pub_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr right_image_pub_;
     rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub_;
@@ -31,6 +25,13 @@ private:
     rclcpp::Publisher<sensor_msgs::msg::RelativeHumidity>::SharedPtr humidity_pub_;
     rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr camera_temperature_left_pub_;
     rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr camera_temperature_right_pub_;
+
+    // ----> Variables to calculate sensors frequencies
+    uint64_t last_imu_ts = 0;
+    uint64_t last_mag_ts = 0;
+    uint64_t last_env_ts = 0;
+    uint64_t last_cam_temp_ts = 0;
+    // <---- Variables to calculate sensors frequencies
 };
 
 #endif // STEREO_CAMERA_PUBLISHER_HPP

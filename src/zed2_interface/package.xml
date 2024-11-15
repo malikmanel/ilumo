@@ -3,8 +3,8 @@
 <package format="3">
   <name>zed2_interface</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="malikmanel@gmail.com">manel</maintainer>
+  <description>Taken from https://github.com/stereolabs/zed-open-capture</description>
+  <maintainer email="m.hashim@campus.tu-berlin.de">Malik-Manel Hashim</maintainer>
   <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
