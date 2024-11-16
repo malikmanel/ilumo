@@ -4,6 +4,7 @@
 #include "zed2_interface/sensorcapture.hpp"
 
 #include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/fill_image.hpp>
 
 #include <iostream>
 #include <sstream>
@@ -89,15 +90,18 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     auto left_image = sensor_msgs::msg::Image();
     auto right_image = sensor_msgs::msg::Image();
 
-    int w,h;
-    videoCap.getFrameSize(w,h);
+    // ---> Get frame size
+    int width,height;
+    videoCap.getFrameSize(width,height);
+    // width /= 2; // This assumes the camera provides both images as one frame, but I don't know how to split them yet
+    // <--- Get frame size
 
     // left_image.frame_id = camera frame id;
-    left_image.height = h;
-    left_image.width = w;
+    left_image.height = height;
+    left_image.width = width;
     // right_image.frame_id = camera frame id;
-    right_image.height = h;
-    right_image.width = w;
+    right_image.height = height;
+    right_image.width = width;
     // <---- Prepare Image messages
 
     uint64_t last_timestamp = 0;
@@ -129,12 +133,23 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
         if(frame.data!=nullptr)
         {
             // How to split data for right image and left image?
-            left_image.data = frame.data;
-            left_image.header.stamp = frame.timestamp;
+            // Images arrive in YUV 4:2:2
+            sensor_msgs::fillImage(left_image,
+                            sensor_msgs::image_encodings::YUV422,
+                            height, // height
+                            width, // width
+                            width * sizeof(uint8_t), // stepSize
+                            frame.data);
+            left_image.header.stamp.nanosec = frame.timestamp;
             left_image_pub_->publish(left_image);
 
-            right_image.header.stamp = frame.timestamp;
-            right_image.data = frame.data;
+            sensor_msgs::fillImage(right_image,
+                            sensor_msgs::image_encodings::YUV422,
+                            height, // height
+                            width, // width
+                            width * sizeof(uint8_t), // stepSize
+                            frame.data);
+            right_image.header.stamp.nanosec = frame.timestamp;
             right_image_pub_->publish(right_image);
         }
         // <---- Publish frame data
