@@ -7,6 +7,8 @@ endif()
 
 
 find_package(ament_cmake REQUIRED)
+find_package(libusb 1 REQUIRED)
+find_package(hidapi REQUIRED)
 
 include_directories(
   include
@@ -17,9 +19,11 @@ install(
   DESTINATION include
 )
 
-add_executable(sensorcapture src/sensorcapture.cpp)
-
 add_executable(videocapture src/videocapture.cpp)
+ament_target_dependencies(videocapture)
+
+add_executable(sensorcapture src/sensorcapture.cpp)
+ament_target_dependencies(sensorcapture hidapi)
 
 install(TARGETS
 sensorcapture
