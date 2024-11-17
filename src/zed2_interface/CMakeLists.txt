@@ -17,6 +17,16 @@ install(
   DESTINATION include
 )
 
+add_executable(sensorcapture src/sensorcapture.cpp)
+
+add_executable(videocapture src/videocapture.cpp)
+
+install(TARGETS
+sensorcapture
+  videocapture
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 ament_export_include_directories(include)
 
 if(BUILD_TESTING)

@@ -20,10 +20,10 @@
 
 #include "zed2_interface/videocapture.hpp"
 
-#ifdef SENSORS_MOD_AVAILABLE
+// #ifdef SENSORS_MOD_AVAILABLE
 
 #include "zed2_interface/sensorcapture.hpp"
-#endif
+// #endif
 
 #include <sys/stat.h>         // for stat, S_ISCHR
 #include <errno.h>            // for errno, EBADRQC, EINVAL, ENOBUFS, ENOENT
