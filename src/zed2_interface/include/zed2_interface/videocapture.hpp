@@ -35,8 +35,6 @@
 
 namespace sl_oc {
 
-
-
 // #ifdef SENSORS_MOD_AVAILABLE
 namespace sensors {
 class SensorCapture;

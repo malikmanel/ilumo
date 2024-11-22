@@ -15,8 +15,6 @@
 
 // ----> Functions
 // Sensor acquisition runs at 400Hz, so it must be executed in a different thread
-void getSensorThreadFunc(sl_oc::sensors::SensorCapture* sensCap);
-// <---- Functions
 
 // ----> Global variables
 std::mutex imuMutex;
@@ -79,7 +77,7 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
 
     // Start the sensor capture thread. Note: since sensor data can be retrieved at 400Hz and video data frequency is
     // minor (max 100Hz), we use a separated thread for sensors.
-    std::thread sensThread(getSensorThreadFunc,&sensCap);
+    std::thread sensThread(StereoCameraPublisher::getSensorThreadFunc,&sensCap);
     // <---- Create Sensors Capture
 
     // ----> Enable video/sensors synchronization
@@ -157,7 +155,7 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
 }
 
 // Sensor acquisition runs at 400Hz, so it must be executed in a different thread
-void getSensorThreadFunc(sl_oc::sensors::SensorCapture* sensCap)
+void StereoCameraPublisher::getSensorThreadFunc(sl_oc::sensors::SensorCapture* sensCap)
 {
     // Flag to stop the thread
     sensThreadStop = false;

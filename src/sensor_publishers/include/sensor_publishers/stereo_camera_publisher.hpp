@@ -9,6 +9,12 @@
 #include <sensor_msgs/msg/temperature.hpp>
 #include <sensor_msgs/msg/relative_humidity.hpp>
 
+namespace sl_oc {
+namespace sensors {
+class SensorCapture;
+}
+}
+
 class StereoCameraPublisher : public rclcpp::Node
 {
 public:
@@ -25,6 +31,8 @@ private:
     rclcpp::Publisher<sensor_msgs::msg::RelativeHumidity>::SharedPtr humidity_pub_;
     rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr camera_temperature_left_pub_;
     rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr camera_temperature_right_pub_;
+
+    static void getSensorThreadFunc(sl_oc::sensors::SensorCapture* sensCap);
 };
 
 #endif // STEREO_CAMERA_PUBLISHER_HPP
