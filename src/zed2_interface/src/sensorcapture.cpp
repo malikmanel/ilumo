@@ -33,21 +33,6 @@ namespace sl_oc {
 
 namespace sensors {
 
-SensorCapture::SensorCapture(VERBOSITY verbose_lvl )
-{
-    mVerbose = verbose_lvl;
-
-    if( mVerbose )
-    {
-        std::string ver =
-                "ZED Open Capture - Sensors module - Version: "
-                + std::to_string(mMajorVer) + "."
-                + std::to_string(mMinorVer) + "."
-                + std::to_string(mPatchVer);
-        INFO_OUT(mVerbose,ver );
-    }
-}
-
 SensorCapture::~SensorCapture()
 {
     close();
@@ -79,22 +64,6 @@ int SensorCapture::enumerateDevices()
 
         mSlDevPid[sn]=pid;
         mSlDevFwVer[sn]=cur_dev->release_number;
-
-        if(mVerbose)
-        {
-            std::ostringstream smsg;
-
-            smsg << "Device Found: " << std::endl;
-            smsg << "  VID: " << std::hex << cur_dev->vendor_id << " PID: " << std::hex << cur_dev->product_id << std::endl;
-            smsg << "  Path: " << cur_dev->path << std::endl;
-            smsg << "  Serial_number:   " << sn_str << std::endl;
-            smsg << "  Manufacturer:   " << wstr2str(cur_dev->manufacturer_string) << std::endl;
-            smsg << "  Product:   " << wstr2str(cur_dev->product_string) << std::endl;
-            smsg << "  Release number:   v" << std::dec << fw_major << "." << fw_minor << std::endl;
-            smsg << "***" << std::endl;
-
-            INFO_OUT(mVerbose,smsg.str());
-        }
 
         cur_dev = cur_dev->next;
     }
@@ -150,7 +119,6 @@ bool SensorCapture::initializeSensors( int sn )
 
         if(mSlDevPid.size()==0)
         {
-            ERROR_OUT(mVerbose,"No available ZED Mini or ZED2 cameras");
             return false;
         }
 
