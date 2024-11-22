@@ -129,24 +129,10 @@ bool SensorCapture::initializeSensors( int sn )
 
     if(!open( pid,sn))
     {
-        std::string msg = "Connection to device with sn ";
-        msg += std::to_string(sn);
-        msg += " failed";
-
-        ERROR_OUT(mVerbose,msg);
-
         mDevFwVer = -1;
         mDevSerial = -1;
 
         return false;
-    }
-
-    if(mVerbose)
-    {
-        std::string msg = "Connected to device with sn ";
-        msg += std::to_string(sn);
-
-        INFO_OUT(mVerbose,msg);
     }
 
     mDevFwVer = mSlDevFwVer[sn];
@@ -184,14 +170,6 @@ bool SensorCapture::enableDataStream(bool enable) {
 
     int res = hid_send_feature_report(mDevHandle, buf, 2);
     if (res < 0) {
-        if(mVerbose)
-        {
-            std::string msg = "Unable to set a feature report [SensStreamStatus] - ";
-            msg += wstr2str(hid_error(mDevHandle));
-
-            WARNING_OUT( mVerbose, msg);
-        }
-
         return false;
     }
 
@@ -208,24 +186,16 @@ bool SensorCapture::isDataStreamEnabled() {
     int res = hid_get_feature_report(mDevHandle, buf, sizeof(buf));
     if (res < 0)
     {
-        std::string msg = "Unable to get a feature report [SensStreamStatus] - ";
-        msg += wstr2str(hid_error(mDevHandle));
-
-        WARNING_OUT( mVerbose,msg );
-
         return false;
     }
 
     if( res < static_cast<int>(sizeof(usb::StreamStatus)) )
     {
-        WARNING_OUT(mVerbose,std::string("SensStreamStatus size mismatch [REP_ID_SENSOR_STREAM_STATUS]"));
         return false;
     }
 
     if( buf[0] != usb::REP_ID_SENSOR_STREAM_STATUS )
     {
-        WARNING_OUT(mVerbose,std::string("SensStreamStatus type mismatch [REP_ID_SENSOR_STREAM_STATUS]") );
-
         return false;
     }
 
@@ -260,12 +230,6 @@ void SensorCapture::close()
     if( mDevHandle ) {
         hid_close(mDevHandle);
         mDevHandle = nullptr;
-    }
-
-    if( mVerbose && mInitialized)
-    {
-        std::string msg = "Device closed";
-        INFO_OUT(mVerbose,msg );
     }
 
     mInitialized=false;
@@ -325,11 +289,6 @@ void SensorCapture::grabThreadFunc()
 
         if( usbBuf[0] != target_struct_id)
         {
-            if(mVerbose)
-            {
-                WARNING_OUT(mVerbose,std::string("REP_ID_SENSOR_DATA - Sensor Data type mismatch") );
-            }
-
             hid_set_nonblocking( mDevHandle, 0 );
             continue;
         }
@@ -561,11 +520,6 @@ bool SensorCapture::sendPing() {
     int res = hid_send_feature_report(mDevHandle, buf, 2);
     if (res < 0)
     {
-        std::string msg = "Unable to send ping [REP_ID_REQUEST_SET-RQ_CMD_PING] - ";
-        msg += wstr2str(hid_error(mDevHandle));
-
-        WARNING_OUT(mVerbose,msg);
-
         return false;
     }
 

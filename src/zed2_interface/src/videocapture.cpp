@@ -117,16 +117,6 @@ VideoCapture::VideoCapture(VideoParams params)
 {
     memcpy( &mParams, &params, sizeof(VideoParams) );
 
-    if( mParams.verbose )
-    {
-        std::string ver =
-                "ZED Open Capture - Camera module - Version: "
-                + std::to_string(mMajorVer) + "."
-                + std::to_string(mMinorVer) + "."
-                + std::to_string(mPatchVer);
-        INFO_OUT(mParams.verbose,ver);
-    }
-
     // Check that FPS is coherent with user resolution
     checkResFps( );
 
@@ -190,12 +180,6 @@ void VideoCapture::reset()
         mLastFrame.data = nullptr;
     }
 
-    if( mParams.verbose && mInitialized)
-    {
-        std::string msg = "Device closed";
-        INFO_OUT(mParams.verbose,msg );
-    }
-
     mInitialized=false;
 }
 
@@ -208,12 +192,11 @@ void VideoCapture::checkResFps()
     switch (mParams.res)
     {
     default:
-        WARNING_OUT(mParams.verbose,"RESOLUTION not supported. Using the best value");
+        ;
 
     case RESOLUTION::HD2K:
         if( mFps!=15 )
         {
-            WARNING_OUT(mParams.verbose,"FPS not supported for the chosen resolution. Using the best value");
             mFps = 15;
         }
         break;
@@ -221,8 +204,6 @@ void VideoCapture::checkResFps()
     case RESOLUTION::HD1080:
         if( mFps!=15 && mFps!=30 )
         {
-            WARNING_OUT(mParams.verbose,"FPS not supported for the chosen resolution. Using the best value");
-
             if( mFps <= 22  )
                 mFps = 15;
             else
@@ -233,8 +214,6 @@ void VideoCapture::checkResFps()
     case RESOLUTION::HD720:
         if( mFps!=15 && mFps!=30 && mFps!=60 )
         {
-            WARNING_OUT(mParams.verbose,"FPS not supported for the chosen resolution. Using the best value");
-
             if( mFps <= 22  )
                 mFps = 15;
             else if( mFps < 45  )
@@ -247,8 +226,6 @@ void VideoCapture::checkResFps()
     case RESOLUTION::VGA:
         if( mFps!=15 && mFps!=30 && mFps!=60 && mFps!=100)
         {
-            WARNING_OUT(mParams.verbose,"FPS not supported for the chosen resolution. Using the best value");
-
             if( mFps <= 22  )
                 mFps = 15;
             else if( mFps < 45  )
@@ -258,19 +235,6 @@ void VideoCapture::checkResFps()
             else
                 mFps = 100;
         }
-    }
-
-    if(mParams.verbose)
-    {
-        std::string msg = std::string("Camera resolution: ")
-                + std::to_string(mWidth)
-                + std::string("x")
-                + std::to_string(mHeight)
-                + std::string("@")
-                + std::to_string(mFps)
-                +std::string("Hz");
-
-        INFO_OUT(mParams.verbose,msg);
     }
 }
 
@@ -301,12 +265,6 @@ bool VideoCapture::initializeVideo( int devId/*=-1*/ )
 
     mInitialized = startCapture();
 
-    if( mParams.verbose && mInitialized)
-    {
-        std::string msg = "Device '" + mDevName + "' opened";
-        INFO_OUT(mParams.verbose,msg );
-    }
-
     setLEDstatus( true );
 
     resetAECAGC();
@@ -327,33 +285,17 @@ bool VideoCapture::openCamera( uint8_t devId )
 
     mDevName = std::string("/dev/video") + std::to_string(mDevId);
 
-    if( mParams.verbose )
-    {
-        std::string msg = "Trying to open the device '" + mDevName + "'";
-        INFO_OUT(mParams.verbose,msg );
-    }
-
     // Check camera model
     mCameraModel = getCameraModel(mDevName);
 
     if( mCameraModel==SL_DEVICE::NONE )
     {
-        if(mParams.verbose)
-        {
-            std::string msg = "The device '" + mDevName + "' is not a Stereolabs camera";
-            WARNING_OUT(mParams.verbose,msg );
-        }
         return false;
     }
 
     if( mCameraModel==SL_DEVICE::ZED ||
             mCameraModel==SL_DEVICE::ZED_M )
     {
-        if(mParams.verbose)
-        {
-            std::string msg = "The FW of the device '" + mDevName + "' is not supported. Please update it.";
-            ERROR_OUT(mParams.verbose,msg );
-        }
         return false;
     }
 
@@ -364,10 +306,6 @@ bool VideoCapture::openCamera( uint8_t devId )
     {
         if(mParams.verbose)
         {
-            std::string msg = std::string("Cannot identify '") + mDevName + "': ["
-                    + std::to_string(errno) +std::string("] ") + std::string(strerror(errno));
-            ERROR_OUT(mParams.verbose,msg);
-
             return false;
         }
     }
@@ -376,9 +314,6 @@ bool VideoCapture::openCamera( uint8_t devId )
     {
         if(mParams.verbose)
         {
-            std::string msg = mDevName + std::string(" is no device");
-            ERROR_OUT(mParams.verbose,msg);
-
             return false;
         }
     }
@@ -389,23 +324,11 @@ bool VideoCapture::openCamera( uint8_t devId )
 
     if (-1 == mFileDesc)
     {
-        if(mParams.verbose)
-        {
-            std::string msg = std::string("Cannot open '") + mDevName + "': ["
-                    + std::to_string(errno) + std::string("] ") + std::string(strerror(errno));
-            ERROR_OUT(mParams.verbose,msg);
-        }
-
         return false;
     }
     // <---- Open
 
     int sn = getSerialNumber();
-    if(mParams.verbose)
-    {
-        std::string msg = std::string("Opened camera with SN: ") + std::to_string(sn);
-        INFO_OUT(mParams.verbose,msg);
-    }
 
     // ----> Init
     struct v4l2_capability cap;
@@ -419,13 +342,6 @@ bool VideoCapture::openCamera( uint8_t devId )
 
     if( -1==xioctl(mFileDesc, VIDIOC_QUERYCAP, &cap) )
     {
-        if(mParams.verbose)
-        {
-            std::string msg = std::string("Cannot query capabilities of '") + mDevName + "': ["
-                    + std::to_string(errno) +std::string("] ") + std::string(strerror(errno));
-            ERROR_OUT(mParams.verbose,msg);
-        }
-
         return false;
     }
 
@@ -454,13 +370,6 @@ bool VideoCapture::openCamera( uint8_t devId )
     /* Preserve original settings as set by v4l2-ctl for example */
     if( -1==xioctl(mFileDesc, VIDIOC_S_FMT/*VIDIOC_G_FMT*/, &fmt) )
     {
-        if(mParams.verbose)
-        {
-            std::string msg = std::string("Cannot set pixel format of '") + mDevName + "': ["
-                    + std::to_string(errno) +std::string("] ") + std::string(strerror(errno));
-            ERROR_OUT(mParams.verbose,msg);
-        }
-
         return false;
     }
 
@@ -471,13 +380,12 @@ bool VideoCapture::openCamera( uint8_t devId )
     // Asked resolution not available, exiting
     if (mWidth != width_tmp || mHeight != height_tmp)
     {
-        ERROR_OUT(mParams.verbose,"Error setting the camera resolution");
         return false;
     }
 
     if( -1==input_set_framerate(mFps) )
     {
-        ERROR_OUT(mParams.verbose,"Error setting the camera framerate");
+        return false; // Note: This used to not return falls, I added this. Before it was just an error.
     }
 
     // ----> Output frame allocation
@@ -497,13 +405,6 @@ bool VideoCapture::openCamera( uint8_t devId )
     req.memory = V4L2_MEMORY_MMAP;
     if( -1==xioctl(mFileDesc, VIDIOC_REQBUFS, &req) )
     {
-        if(mParams.verbose)
-        {
-            std::string msg = std::string("Cannot request buffers for '") + mDevName + "': ["
-                    + std::to_string(errno) +std::string("] ") + std::string(strerror(errno));
-            ERROR_OUT(mParams.verbose,msg);
-        }
-
         return false;
     }
 
@@ -520,13 +421,6 @@ bool VideoCapture::openCamera( uint8_t devId )
         buf.flags = V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC;
         if( -1==xioctl(mFileDesc, VIDIOC_QUERYBUF, &buf))
         {
-            if(mParams.verbose)
-            {
-                std::string msg = std::string("Cannot query buffer for '") + mDevName + "': ["
-                        + std::to_string(errno) +std::string("] ") + std::string(strerror(errno));
-                ERROR_OUT(mParams.verbose,msg);
-            }
-
             return false;
         }
 
@@ -608,13 +502,6 @@ bool VideoCapture::startCapture()
         buf.index = i;
         if( -1==xioctl(mFileDesc, VIDIOC_QBUF, &buf) )
         {
-            if(mParams.verbose)
-            {
-                std::string msg = std::string("Cannot queue buffer for '") + mDevName + "': ["
-                        + std::to_string(errno) +std::string("] ") + std::string(strerror(errno));
-                ERROR_OUT(mParams.verbose,msg);
-            }
-
             return false;
         }
     }
@@ -624,26 +511,12 @@ bool VideoCapture::startCapture()
     int priority = V4L2_PRIORITY_RECORD;
     if( -1==xioctl(mFileDesc, VIDIOC_G_PRIORITY, &priority) )
     {
-        if(mParams.verbose)
-        {
-            std::string msg = std::string("Cannot set priority for '") + mDevName + "': ["
-                    + std::to_string(errno) +std::string("] ") + std::string(strerror(errno));
-            ERROR_OUT(mParams.verbose,msg);
-        }
-
         return false;
     }
 
     // Start streaming
     if( -1==xioctl(mFileDesc, VIDIOC_STREAMON, &type) )
     {
-        if(mParams.verbose)
-        {
-            std::string msg = std::string("Cannot start streaming for '") + mDevName + "': ["
-                    + std::to_string(errno) +std::string("] ") + std::string(strerror(errno));
-            ERROR_OUT(mParams.verbose,msg);
-        }
-
         return false;
     }
     // <---- Start capturing
@@ -695,46 +568,21 @@ SL_DEVICE VideoCapture::getCameraModel( std::string dev_name)
     std::string name = dev_name.erase(0, 5); //remove /dev/
     if (!(std::ifstream("/sys/class/video4linux/" + name + "/device/modalias") >> modalias))
     {
-        if(mParams.verbose>sl_oc::VERBOSITY::ERROR)
-        {
-            std::string msg =
-                    std::string(" Not a modalias : /sys/class/video4linux/")
-                    + name + std::string("/device/modalias");
-            WARNING_OUT(mParams.verbose,msg);
-        }
         return camera_device;
     }
 
     if (modalias.size() < 14 || modalias.substr(0, 5) != "usb:v" || modalias[9] != 'p')
     {
-        if(mParams.verbose)
-        {
-            std::string msg = std::string(" not a modalias 2" );
-            WARNING_OUT(mParams.verbose,msg);
-        }
         return camera_device;
     }
 
     if (!(std::istringstream(modalias.substr(5, 4)) >> std::hex >> vid))
     {
-        if(mParams.verbose)
-        {
-            std::string msg = std::string("unable to read Vendor ID" );
-            WARNING_OUT(mParams.verbose,msg);
-        }
-
-
         return camera_device;
     }
 
     if (!(std::istringstream(modalias.substr(10, 4)) >> std::hex >> pid))
     {
-        if(mParams.verbose)
-        {
-            std::string msg = std::string("unable to read Product ID" );
-            WARNING_OUT(mParams.verbose,msg);
-        }
-
         return camera_device;
     }
 
@@ -972,18 +820,6 @@ int VideoCapture::ll_VendorControl(uint8_t *buf, int len, int readMode, bool saf
             err = strerror(res);
             break;
         }
-
-        if(mParams.verbose)
-        {
-            std::string msg = std::string("CBS SET failed") +
-                    std::string(err) +
-                    std::string(". (System code: ") +
-                    std::to_string(res) +
-                    std::string(") ") +
-                    std::to_string(xu_query_send.size);
-            ERROR_OUT(mParams.verbose,msg);
-        }
-
         return -1;
     }
 
@@ -1018,17 +854,6 @@ int VideoCapture::ll_VendorControl(uint8_t *buf, int len, int readMode, bool saf
                 break;
             default: err = strerror(res);
                 break;
-            }
-
-            if(mParams.verbose)
-            {
-                std::string msg = std::string("CBS GET failed") +
-                        std::string(err) +
-                        std::string(". (System code: ") +
-                        std::to_string(res) +
-                        std::string(") ") +
-                        std::to_string(xu_query_send.size);
-                ERROR_OUT(mParams.verbose,msg);
             }
             return -1;
         }

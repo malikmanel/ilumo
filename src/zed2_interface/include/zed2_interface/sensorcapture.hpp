@@ -31,7 +31,7 @@
 // #ifdef SENSORS_MOD_AVAILABLE
 
 #include "sensorcapture_def.hpp"
-#include "hidapi.h"
+#include <hidapi/hidapi.h>
 
 namespace sl_oc {
 
