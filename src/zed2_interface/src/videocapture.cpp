@@ -1973,7 +1973,7 @@ bool VideoCapture::resetAGCAECregisters() {
 }
 #endif
 
-#ifdef SENSORS_MOD_AVAILABLE
+// #ifdef SENSORS_MOD_AVAILABLE
 bool VideoCapture::enableSensorSync( sensors::SensorCapture* sensCap )
 {
     if(!sensCap)
@@ -1989,7 +1989,7 @@ bool VideoCapture::enableSensorSync( sensors::SensorCapture* sensCap )
 
     return true;
 }
-#endif
+// #endif
 
 }
 
