@@ -20,10 +20,10 @@
 
 #include "zed2_interface/sensorcapture.hpp"
 
-#ifdef VIDEO_MOD_AVAILABLE
+// #ifdef VIDEO_MOD_AVAILABLE
 
 #include "zed2_interface/videocapture.hpp"
-#endif
+// #endif
 
 #include <sstream>
 #include <cmath>              // for round
