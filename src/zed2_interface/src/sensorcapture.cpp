@@ -36,17 +36,6 @@ namespace sensors {
 SensorCapture::SensorCapture(VERBOSITY verbose_lvl )
 {
     mVerbose = verbose_lvl;
-
-    if( mVerbose )
-    {
-        std::string ver =
-                "ZED Open Capture - Sensors module - Version: "
-                + std::to_string(mMajorVer) + "."
-                + std::to_string(mMinorVer) + "."
-                + std::to_string(mPatchVer);
-        
-    }
-    // Theoretically there where a bunch of verbose things and I removed them. Maybe dumb.
 }
 
 SensorCapture::~SensorCapture()
