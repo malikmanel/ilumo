@@ -1,6 +1,9 @@
 #ifndef STEREO_CAMERA_PUBLISHER_HPP
 #define STEREO_CAMERA_PUBLISHER_HPP
 
+#include "zed2_interface/videocapture.hpp"
+#include "zed2_interface/sensorcapture.hpp"
+
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/imu.hpp>
@@ -32,7 +35,11 @@ private:
     rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr camera_temperature_left_pub_;
     rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr camera_temperature_right_pub_;
 
+    rclcpp::TimerBase::SharedPtr timer_;
+    sl_oc::video::VideoCapture videoCap;
+
     static void getSensorThreadFunc(sl_oc::sensors::SensorCapture* sensCap);
+    void imageCallback();
 };
 
 #endif // STEREO_CAMERA_PUBLISHER_HPP

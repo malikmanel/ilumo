@@ -11,7 +11,10 @@
 #include <iomanip>
 #include <thread>
 #include <mutex>
+#include <chrono>
 // <---- Includes
+
+using namespace std::chrono_literals;
 
 // ----> Functions
 // Sensor acquisition runs at 400Hz, so it must be executed in a different thread
@@ -28,15 +31,15 @@ uint64_t mcu_sync_ts=0;
 StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(name)
 {
     // publishers for all camera info. Still needs barometer and all that. Also prob. split IMU into multiple publishers
-    left_image_pub_ = create_publisher<sensor_msgs::msg::Image>("stereo_camera/left_camera/image", 10);
-    right_image_pub_ = create_publisher<sensor_msgs::msg::Image>("stereo_camera/right_camera/image", 10);
-    imu_pub_ = create_publisher<sensor_msgs::msg::Imu>("stereo_camera/imu", 10);
-    magnetometer_pub_ = create_publisher<sensor_msgs::msg::MagneticField>("stereo_camera/magnetometer", 10);
-    pressure_pub_ = create_publisher<sensor_msgs::msg::FluidPressure>("stereo_camera/environment/pressure", 10);
-    temperature_pub_ = create_publisher<sensor_msgs::msg::Temperature>("stereo_camera/environment/temperature", 10);;
-    humidity_pub_ = create_publisher<sensor_msgs::msg::RelativeHumidity>("stereo_camera/environment/humidity", 10);;
-    camera_temperature_left_pub_ = create_publisher<sensor_msgs::msg::Temperature>("stereo_camera/left_camera/temperature", 10);;
-    camera_temperature_right_pub_ = create_publisher<sensor_msgs::msg::Temperature>("stereo_camera/right_camera/temperature", 10);;
+    left_image_pub_ = this->create_publisher<sensor_msgs::msg::Image>("stereo_camera/left_camera/image", 10);
+    right_image_pub_ = this->create_publisher<sensor_msgs::msg::Image>("stereo_camera/right_camera/image", 10);
+    imu_pub_ = this->create_publisher<sensor_msgs::msg::Imu>("stereo_camera/imu", 10);
+    magnetometer_pub_ = this->create_publisher<sensor_msgs::msg::MagneticField>("stereo_camera/magnetometer", 10);
+    pressure_pub_ = this->create_publisher<sensor_msgs::msg::FluidPressure>("stereo_camera/environment/pressure", 10);
+    temperature_pub_ = this->create_publisher<sensor_msgs::msg::Temperature>("stereo_camera/environment/temperature", 10);;
+    humidity_pub_ = this->create_publisher<sensor_msgs::msg::RelativeHumidity>("stereo_camera/environment/humidity", 10);;
+    camera_temperature_left_pub_ = this->create_publisher<sensor_msgs::msg::Temperature>("stereo_camera/left_camera/temperature", 10);;
+    camera_temperature_right_pub_ = this->create_publisher<sensor_msgs::msg::Temperature>("stereo_camera/right_camera/temperature", 10);;
 
     sl_oc::sensors::SensorCapture::resetSensorModule();
     sl_oc::sensors::SensorCapture::resetVideoModule();
@@ -83,7 +86,12 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     //videoCap.enableSensorSync(&sensCap);
     // <---- Enable video/sensors synchronization
 
-    // ----> Prepare Image messages
+    timer_ = create_wall_timer(2ms, std::bind(&StereoCameraPublisher::imageCallback, this));
+}
+
+void StereoCameraPublisher::imageCallback()
+{
+        // ----> Prepare Image messages
     auto left_image_msg = sensor_msgs::msg::Image();
     auto right_image_msg = sensor_msgs::msg::Image();
 
@@ -105,52 +113,48 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
 
     float frame_fps=0;
 
-    // Infinite grabbing loop
-    while (1)
+    // ----> Get Video frame
+    // Get last available frame
+    const sl_oc::video::Frame frame = videoCap.getLastFrame(1);
+
+    // If the frame is valid we can update it
+    if(frame.data!=nullptr && frame.timestamp!=last_timestamp)
     {
-        // ----> Get Video frame
-        // Get last available frame
-        const sl_oc::video::Frame frame = videoCap.getLastFrame(1);
-
-        // If the frame is valid we can update it
-        if(frame.data!=nullptr && frame.timestamp!=last_timestamp)
-        {
-            frame_fps = 1e9/static_cast<float>(frame.timestamp-last_timestamp);
-            last_timestamp = frame.timestamp;
-        }
-        // <---- Get Video frame
-
-        // ----> Video Debug information
-        //RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(9) << "Video timestamp: " << static_cast<double>(last_timestamp)/1e9<< " sec");
-        //if( last_timestamp!=0 )
-        //    RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << frame_fps << " Hz]");
-        // <---- Video Debug information
-
-        // ----> Publish frame data
-        if(frame.data!=nullptr)
-        {
-            // How to split data for right image and left image?
-            // Images arrive in YUV 4:2:2
-            sensor_msgs::fillImage(left_image_msg,
-                            sensor_msgs::image_encodings::YUV422,
-                            height, // height
-                            width, // width
-                            width * sizeof(uint8_t) * 2, // stepSize = width*byte_depth*num_channels
-                            frame.data);
-            left_image_msg.header.stamp.nanosec = frame.timestamp;
-            left_image_pub_->publish(left_image_msg);
-
-            sensor_msgs::fillImage(right_image_msg,
-                            sensor_msgs::image_encodings::YUV422,
-                            height, // height
-                            width, // width
-                            width * sizeof(uint8_t) * 2, // stepSize
-                            frame.data);
-            right_image_msg.header.stamp.nanosec = frame.timestamp;
-            right_image_pub_->publish(right_image_msg);
-        }
-        // <---- Publish frame data
+        frame_fps = 1e9/static_cast<float>(frame.timestamp-last_timestamp);
+        last_timestamp = frame.timestamp;
     }
+    // <---- Get Video frame
+
+    // ----> Video Debug information
+    RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(9) << "Video timestamp: " << static_cast<double>(last_timestamp)/1e9<< " sec");
+    if( last_timestamp!=0 )
+        RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << frame_fps << " Hz]");
+    // <---- Video Debug information
+
+    // ----> Publish frame data
+    if(frame.data!=nullptr)
+    {
+        // How to split data for right image and left image?
+        // Images arrive in YUV 4:2:2
+        sensor_msgs::fillImage(left_image_msg,
+                        sensor_msgs::image_encodings::YUV422,
+                        height, // height
+                        width, // width
+                        width * sizeof(uint8_t) * 2, // stepSize = width*byte_depth*num_channels
+                        frame.data);
+        left_image_msg.header.stamp.nanosec = frame.timestamp;
+        left_image_pub_->publish(left_image_msg);
+
+        sensor_msgs::fillImage(right_image_msg,
+                        sensor_msgs::image_encodings::YUV422,
+                        height, // height
+                        width, // width
+                        width * sizeof(uint8_t) * 2, // stepSize
+                        frame.data);
+        right_image_msg.header.stamp.nanosec = frame.timestamp;
+        right_image_pub_->publish(right_image_msg);
+    }
+    // <---- Publish frame data
 }
 
 // Sensor acquisition runs at 400Hz, so it must be executed in a different thread
