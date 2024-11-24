@@ -65,22 +65,22 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     // <---- Create a Video Capture object
 
     // ----> Create a Sensors Capture object
-    sl_oc::sensors::SensorCapture sensCap(verbose);
-    if( !sensCap.initializeSensors(camSn) ) // Note: we use the serial number acquired by the VideoCapture object
-    {
-        RCLCPP_ERROR(get_logger(), "Cannot open sensors capture");
-        rclcpp::shutdown();
-    }
+    //sl_oc::sensors::SensorCapture sensCap(verbose);
+    //if( !sensCap.initializeSensors(camSn) ) // Note: we use the serial number acquired by the VideoCapture object
+    //{
+    //    RCLCPP_ERROR(get_logger(), "Cannot open sensors capture");
+    //    rclcpp::shutdown();
+    //}
 
-    RCLCPP_INFO_STREAM(get_logger(), "Sensors Capture connected to camera sn: " << sensCap.getSerialNumber());
+    //RCLCPP_INFO_STREAM(get_logger(), "Sensors Capture connected to camera sn: " << sensCap.getSerialNumber());
 
     // Start the sensor capture thread. Note: since sensor data can be retrieved at 400Hz and video data frequency is
     // minor (max 100Hz), we use a separated thread for sensors.
-    std::thread sensThread(StereoCameraPublisher::getSensorThreadFunc,&sensCap);
+    // std::thread sensThread(StereoCameraPublisher::getSensorThreadFunc,&sensCap);
     // <---- Create Sensors Capture
 
     // ----> Enable video/sensors synchronization
-    videoCap.enableSensorSync(&sensCap);
+    //videoCap.enableSensorSync(&sensCap);
     // <---- Enable video/sensors synchronization
 
     // ----> Prepare Image messages
@@ -121,9 +121,9 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
         // <---- Get Video frame
 
         // ----> Video Debug information
-        RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(9) << "Video timestamp: " << static_cast<double>(last_timestamp)/1e9<< " sec");
-        if( last_timestamp!=0 )
-            RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << frame_fps << " Hz]");
+        //RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(9) << "Video timestamp: " << static_cast<double>(last_timestamp)/1e9<< " sec");
+        //if( last_timestamp!=0 )
+        //    RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << frame_fps << " Hz]");
         // <---- Video Debug information
 
         // ----> Publish frame data
@@ -135,7 +135,7 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
                             sensor_msgs::image_encodings::YUV422,
                             height, // height
                             width, // width
-                            width * sizeof(uint8_t), // stepSize
+                            width * sizeof(uint8_t) * 2, // stepSize = width*byte_depth*num_channels
                             frame.data);
             left_image_msg.header.stamp.nanosec = frame.timestamp;
             left_image_pub_->publish(left_image_msg);
@@ -144,7 +144,7 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
                             sensor_msgs::image_encodings::YUV422,
                             height, // height
                             width, // width
-                            width * sizeof(uint8_t), // stepSize
+                            width * sizeof(uint8_t) * 2, // stepSize
                             frame.data);
             right_image_msg.header.stamp.nanosec = frame.timestamp;
             right_image_pub_->publish(right_image_msg);
