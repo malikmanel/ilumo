@@ -33,6 +33,22 @@ namespace sl_oc {
 
 namespace sensors {
 
+SensorCapture::SensorCapture(VERBOSITY verbose_lvl )
+{
+    mVerbose = verbose_lvl;
+
+    if( mVerbose )
+    {
+        std::string ver =
+                "ZED Open Capture - Sensors module - Version: "
+                + std::to_string(mMajorVer) + "."
+                + std::to_string(mMinorVer) + "."
+                + std::to_string(mPatchVer);
+        
+    }
+    // Theoretically there where a bunch of verbose things and I removed them. Maybe dumb.
+}
+
 SensorCapture::~SensorCapture()
 {
     close();
@@ -51,8 +67,8 @@ int SensorCapture::enumerateDevices()
     devs = hid_enumerate(SL_USB_VENDOR, 0x0);
     cur_dev = devs;
     while (cur_dev) {
-        int fw_major = cur_dev->release_number>>8;
-        int fw_minor = cur_dev->release_number&0x00FF;
+        // int fw_major = cur_dev->release_number>>8;
+        // int fw_minor = cur_dev->release_number&0x00FF;
         uint16_t pid = cur_dev->product_id;
         if(!cur_dev->serial_number)
         {
@@ -486,7 +502,7 @@ void SensorCapture::grabThreadFunc()
     mGrabRunning = false;
 }
 
-#ifdef VIDEO_MOD_AVAILABLE
+// #ifdef VIDEO_MOD_AVAILABLE
 void SensorCapture::updateTimestampOffset( uint64_t frame_ts)
 {
     static int64_t offset_sum = 0;
@@ -507,7 +523,7 @@ void SensorCapture::updateTimestampOffset( uint64_t frame_ts)
         count=0;
     }
 }
-#endif
+// #endif
 
 bool SensorCapture::sendPing() {
     if( !mDevHandle )

@@ -22,7 +22,6 @@ std::string imuTsStr;
 std::string imuAccelStr;
 std::string imuGyroStr;
 
-bool sensThreadStop=false;
 uint64_t mcu_sync_ts=0;
 // <---- Global variables
 
@@ -39,8 +38,8 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     camera_temperature_left_pub_ = create_publisher<sensor_msgs::msg::Temperature>("stereo_camera/left_camera/temperature", 10);;
     camera_temperature_right_pub_ = create_publisher<sensor_msgs::msg::Temperature>("stereo_camera/right_camera/temperature", 10);;
 
-    //sl_oc::sensors::SensorCapture::resetSensorModule();
-    //sl_oc::sensors::SensorCapture::resetVideoModule();
+    sl_oc::sensors::SensorCapture::resetSensorModule();
+    sl_oc::sensors::SensorCapture::resetVideoModule();
 
     // Set the verbose level
     sl_oc::VERBOSITY verbose = sl_oc::VERBOSITY::ERROR;
@@ -85,8 +84,8 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     // <---- Enable video/sensors synchronization
 
     // ----> Prepare Image messages
-    auto left_image = sensor_msgs::msg::Image();
-    auto right_image = sensor_msgs::msg::Image();
+    auto left_image_msg = sensor_msgs::msg::Image();
+    auto right_image_msg = sensor_msgs::msg::Image();
 
     // ---> Get frame size
     int width,height;
@@ -94,12 +93,12 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     // width /= 2; // This assumes the camera provides both images as one frame, but I don't know how to split them yet
     // <--- Get frame size
 
-    // left_image.frame_id = camera frame id;
-    left_image.height = height;
-    left_image.width = width;
-    // right_image.frame_id = camera frame id;
-    right_image.height = height;
-    right_image.width = width;
+    // left_image_msg.frame_id = camera frame id;
+    left_image_msg.height = height;
+    left_image_msg.width = width;
+    // right_image_msg.frame_id = camera frame id;
+    right_image_msg.height = height;
+    right_image_msg.width = width;
     // <---- Prepare Image messages
 
     uint64_t last_timestamp = 0;
@@ -132,23 +131,23 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
         {
             // How to split data for right image and left image?
             // Images arrive in YUV 4:2:2
-            sensor_msgs::fillImage(left_image,
+            sensor_msgs::fillImage(left_image_msg,
                             sensor_msgs::image_encodings::YUV422,
                             height, // height
                             width, // width
                             width * sizeof(uint8_t), // stepSize
                             frame.data);
-            left_image.header.stamp.nanosec = frame.timestamp;
-            left_image_pub_->publish(left_image);
+            left_image_msg.header.stamp.nanosec = frame.timestamp;
+            left_image_pub_->publish(left_image_msg);
 
-            sensor_msgs::fillImage(right_image,
+            sensor_msgs::fillImage(right_image_msg,
                             sensor_msgs::image_encodings::YUV422,
                             height, // height
                             width, // width
                             width * sizeof(uint8_t), // stepSize
                             frame.data);
-            right_image.header.stamp.nanosec = frame.timestamp;
-            right_image_pub_->publish(right_image);
+            right_image_msg.header.stamp.nanosec = frame.timestamp;
+            right_image_pub_->publish(right_image_msg);
         }
         // <---- Publish frame data
     }
@@ -157,14 +156,16 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
 // Sensor acquisition runs at 400Hz, so it must be executed in a different thread
 void StereoCameraPublisher::getSensorThreadFunc(sl_oc::sensors::SensorCapture* sensCap)
 {
-    // Flag to stop the thread
-    sensThreadStop = false;
+    // ----> Create IMU message template
+    auto imu_msg = sensor_msgs::msg::Imu();
+    // imu_msg.header.frame_id = ...;
+    // <---- Create IMU message template
 
-    // Previous IMU timestamp to calculate frequency
-    uint64_t last_imu_ts = 0;
+    // Previous IMU timestamp to calculate frequency, See IMU Debug Info
+    // uint64_t last_imu_ts = 0;
 
     // Infinite data grabbing loop
-    while(!sensThreadStop)
+    while(1)
     {
         // ----> Get IMU data
         const sl_oc::sensors::data::Imu imuData = sensCap->getLastIMUData(2000);
@@ -172,35 +173,23 @@ void StereoCameraPublisher::getSensorThreadFunc(sl_oc::sensors::SensorCapture* s
         // Process data only if valid
         if(imuData.valid == sl_oc::sensors::data::Imu::NEW_VAL ) // Uncomment to use only data syncronized with the video frames
         {
-            // ----> Data info to be displayed
-            std::stringstream timestamp;
-            std::stringstream accel;
-            std::stringstream gyro;
+            // ----> IMU Debug information, Disabled for now as I need to figure out how to do this in a static member function
+            // RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(9) << "IMU timestamp:   " << static_cast<double>(imuData.timestamp)/1e9<< " sec" );
+            // if(last_imu_ts!=0)
+            //     RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(imuData.timestamp-last_imu_ts) << " Hz]");
+            // last_imu_ts = imuData.timestamp;
+            // ---- IMU Debug information
 
-            timestamp << std::fixed << std::setprecision(9) << "IMU timestamp:   " << static_cast<double>(imuData.timestamp)/1e9<< " sec" ;
-            if(last_imu_ts!=0)
-                timestamp << std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(imuData.timestamp-last_imu_ts) << " Hz]";
-            last_imu_ts = imuData.timestamp;
-
-            accel << std::fixed << std::showpos << std::setprecision(4) << " * Accel: " << imuData.aX << " " << imuData.aY << " " << imuData.aZ << " [m/s^2]";
-            gyro << std::fixed << std::showpos << std::setprecision(4) << " * Gyro: " << imuData.gX << " " << imuData.gY << " " << imuData.gZ << " [deg/s]";
-            // <---- Data info to be displayed
-
-            // Mutex to not overwrite data while diplaying them
-            imuMutex.lock();
-
-            imuTsStr = timestamp.str();
-            imuAccelStr = accel.str();
-            imuGyroStr = gyro.str();
-
-            // ----> Timestamp of the synchronized data
-            if(imuData.sync)
-            {
-                mcu_sync_ts = imuData.timestamp;
-            }
-            // <---- Timestamp of the synchronized data
-
-            imuMutex.unlock();
+            // ----> Prepare IMU message
+            imu_msg.header.stamp.nanosec = imuData.timestamp;
+            // for imu_msg.orientation.x/y/z/w maybe use http://wiki.ros.org/imu_filter_madgwick
+            imu_msg.linear_acceleration.x = imuData.aX;
+            imu_msg.linear_acceleration.x = imuData.aY;
+            imu_msg.linear_acceleration.x = imuData.aZ;
+            imu_msg.angular_velocity.x = imuData.gX;
+            imu_msg.angular_velocity.y = imuData.gY;
+            imu_msg.angular_velocity.z = imuData.gZ;
+            // <---- Prepare IMU message
         }
         // <---- Get IMU data
     }
