@@ -32,14 +32,16 @@ private:
     rclcpp::Publisher<sensor_msgs::msg::FluidPressure>::SharedPtr pressure_pub_;
     rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr temperature_pub_;
     rclcpp::Publisher<sensor_msgs::msg::RelativeHumidity>::SharedPtr humidity_pub_;
-    rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr camera_temperature_left_pub_;
-    rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr camera_temperature_right_pub_;
+    rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr left_camera_temperature_pub_;
+    rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr right_camera_temperature_pub_;
 
-    rclcpp::TimerBase::SharedPtr timer_;
+    rclcpp::TimerBase::SharedPtr image_timer_;
+    rclcpp::TimerBase::SharedPtr sensor_timer_;
     sl_oc::video::VideoCapture videoCap;
+    sl_oc::sensors::SensorCapture sensCap;
 
-    static void getSensorThreadFunc(sl_oc::sensors::SensorCapture* sensCap);
     void imageCallback();
+    void sensorCallback();
 };
 
 #endif // STEREO_CAMERA_PUBLISHER_HPP

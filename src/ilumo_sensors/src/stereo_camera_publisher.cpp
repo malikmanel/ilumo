@@ -38,8 +38,8 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     pressure_pub_ = this->create_publisher<sensor_msgs::msg::FluidPressure>("stereo_camera/environment/pressure", 10);
     temperature_pub_ = this->create_publisher<sensor_msgs::msg::Temperature>("stereo_camera/environment/temperature", 10);;
     humidity_pub_ = this->create_publisher<sensor_msgs::msg::RelativeHumidity>("stereo_camera/environment/humidity", 10);;
-    camera_temperature_left_pub_ = this->create_publisher<sensor_msgs::msg::Temperature>("stereo_camera/left_camera/temperature", 10);;
-    camera_temperature_right_pub_ = this->create_publisher<sensor_msgs::msg::Temperature>("stereo_camera/right_camera/temperature", 10);;
+    left_camera_temperature_pub_ = this->create_publisher<sensor_msgs::msg::Temperature>("stereo_camera/left_camera/temperature", 10);;
+    right_camera_temperature_pub_ = this->create_publisher<sensor_msgs::msg::Temperature>("stereo_camera/right_camera/temperature", 10);;
 
     sl_oc::sensors::SensorCapture::resetSensorModule();
     sl_oc::sensors::SensorCapture::resetVideoModule();
@@ -68,25 +68,21 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     // <---- Create a Video Capture object
 
     // ----> Create a Sensors Capture object
-    //sl_oc::sensors::SensorCapture sensCap(verbose);
-    //if( !sensCap.initializeSensors(camSn) ) // Note: we use the serial number acquired by the VideoCapture object
-    //{
-    //    RCLCPP_ERROR(get_logger(), "Cannot open sensors capture");
-    //    rclcpp::shutdown();
-    //}
+    sl_oc::sensors::SensorCapture sensCap(verbose);
+    if( !sensCap.initializeSensors(camSn) ) // Note: we use the serial number acquired by the VideoCapture object
+    {
+        RCLCPP_ERROR(get_logger(), "Cannot open sensors capture");
+        rclcpp::shutdown();
+    }
 
-    //RCLCPP_INFO_STREAM(get_logger(), "Sensors Capture connected to camera sn: " << sensCap.getSerialNumber());
-
-    // Start the sensor capture thread. Note: since sensor data can be retrieved at 400Hz and video data frequency is
-    // minor (max 100Hz), we use a separated thread for sensors.
-    // std::thread sensThread(StereoCameraPublisher::getSensorThreadFunc,&sensCap);
-    // <---- Create Sensors Capture
+    RCLCPP_INFO_STREAM(get_logger(), "Sensors Capture connected to camera sn: " << sensCap.getSerialNumber());
 
     // ----> Enable video/sensors synchronization
-    //videoCap.enableSensorSync(&sensCap);
+    videoCap.enableSensorSync(&sensCap);
     // <---- Enable video/sensors synchronization
 
-    timer_ = create_wall_timer(2ms, std::bind(&StereoCameraPublisher::imageCallback, this));
+    // image_timer_ = create_wall_timer(20ms, std::bind(&StereoCameraPublisher::imageCallback, this));
+    sensor_timer_ = create_wall_timer(2ms, std::bind(&StereoCameraPublisher::sensorCallback, this));
 }
 
 void StereoCameraPublisher::imageCallback()
@@ -158,45 +154,144 @@ void StereoCameraPublisher::imageCallback()
 }
 
 // Sensor acquisition runs at 400Hz, so it must be executed in a different thread
-void StereoCameraPublisher::getSensorThreadFunc(sl_oc::sensors::SensorCapture* sensCap)
+void StereoCameraPublisher::sensorCallback()
 {
-    // ----> Create IMU message template
+    // ----> Create message templates
     auto imu_msg = sensor_msgs::msg::Imu();
+    auto mag_msg = sensor_msgs::msg::MagneticField();
+    auto press_msg = sensor_msgs::msg::FluidPressure();
+    auto temp_msg = sensor_msgs::msg::Temperature();
+    auto humi_msg = sensor_msgs::msg::RelativeHumidity();
+    auto left_cam_temp_msg = sensor_msgs::msg::Temperature();
+    auto right_cam_temp_msg = sensor_msgs::msg::Temperature();
+
     // imu_msg.header.frame_id = ...;
-    // <---- Create IMU message template
+    // mag_msg.header.frame_id = ...;
+    // press_msg.header.frame_id = ...;
+    // temp_msg.header.frame_id = ...;
+    // humi_msg.header.frame_id = ...;
+    // left_cam_temp_msg.header.frame_id = ...;
+    // right_cam_temp_msg.header.frame_id = ...;
+    // <---- Create message templates
 
     // Previous IMU timestamp to calculate frequency, See IMU Debug Info
-    // uint64_t last_imu_ts = 0;
+    uint64_t last_imu_ts = 0;
+    uint64_t last_mag_ts = 0;
+    uint64_t last_env_ts = 0;
+    uint64_t last_cam_temp_ts = 0;
 
-    // Infinite data grabbing loop
-    while(1)
+    // ----> Get IMU data
+    const sl_oc::sensors::data::Imu imuData = sensCap.getLastIMUData(2000);
+
+    // Process data only if valid
+    if(imuData.valid == sl_oc::sensors::data::Imu::NEW_VAL ) // Uncomment to use only data syncronized with the video frames
     {
-        // ----> Get IMU data
-        const sl_oc::sensors::data::Imu imuData = sensCap->getLastIMUData(2000);
+        // ----> IMU Debug information
+        RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(9) << "IMU timestamp:   " << static_cast<double>(imuData.timestamp)/1e9<< " sec" );
+        if(last_imu_ts!=0)
+            RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(imuData.timestamp-last_imu_ts) << " Hz]");
+        last_imu_ts = imuData.timestamp;
+        // ---- IMU Debug information
 
-        // Process data only if valid
-        if(imuData.valid == sl_oc::sensors::data::Imu::NEW_VAL ) // Uncomment to use only data syncronized with the video frames
-        {
-            // ----> IMU Debug information, Disabled for now as I need to figure out how to do this in a static member function
-            // RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(9) << "IMU timestamp:   " << static_cast<double>(imuData.timestamp)/1e9<< " sec" );
-            // if(last_imu_ts!=0)
-            //     RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(imuData.timestamp-last_imu_ts) << " Hz]");
-            // last_imu_ts = imuData.timestamp;
-            // ---- IMU Debug information
+        // ----> Prepare IMU message
+        imu_msg.header.stamp.nanosec = imuData.timestamp;
+        // for imu_msg.orientation.x/y/z/w maybe use http://wiki.ros.org/imu_filter_madgwick
+        imu_msg.linear_acceleration.x = imuData.aX;
+        imu_msg.linear_acceleration.x = imuData.aY;
+        imu_msg.linear_acceleration.x = imuData.aZ;
+        imu_msg.angular_velocity.x = imuData.gX;
+        imu_msg.angular_velocity.y = imuData.gY;
+        imu_msg.angular_velocity.z = imuData.gZ;
+        // <---- Prepare IMU message
 
-            // ----> Prepare IMU message
-            imu_msg.header.stamp.nanosec = imuData.timestamp;
-            // for imu_msg.orientation.x/y/z/w maybe use http://wiki.ros.org/imu_filter_madgwick
-            imu_msg.linear_acceleration.x = imuData.aX;
-            imu_msg.linear_acceleration.x = imuData.aY;
-            imu_msg.linear_acceleration.x = imuData.aZ;
-            imu_msg.angular_velocity.x = imuData.gX;
-            imu_msg.angular_velocity.y = imuData.gY;
-            imu_msg.angular_velocity.z = imuData.gZ;
-            // <---- Prepare IMU message
-        }
-        // <---- Get IMU data
+        // ---> Publish IMU message
+        imu_pub_->publish(imu_msg);
+        // <--- Publish IMU message
     }
+    // <---- Get IMU data
+
+    // ----> Get Magnetometer data with a timeout of 100 microseconds to not slow down fastest data (IMU)
+    const sl_oc::sensors::data::Magnetometer magData = sensCap.getLastMagnetometerData(100);
+
+    // Process data only if valid
+    if( magData.valid == sl_oc::sensors::data::Magnetometer::NEW_VAL )
+    {
+        // ----> Magnetometer Debug information
+        RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(9) << "Magnetometer timestamp: " << static_cast<double>(magData.timestamp)/1e9<< " sec" );
+        if(last_mag_ts!=0)
+            RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(magData.timestamp-last_mag_ts) << " Hz]");
+        last_mag_ts = magData.timestamp;
+        // ---- Magnetometer Debug information
+
+        // ----> Prepare Magnetometer message
+        mag_msg.header.stamp.nanosec = magData.timestamp;
+        mag_msg.magnetic_field.x = magData.mX;
+        mag_msg.magnetic_field.y = magData.mY;
+        mag_msg.magnetic_field.z = magData.mZ;
+        // <---- Prepare Magnetometer message
+
+        // ---> Publish Magnetometer message
+        magnetometer_pub_->publish(mag_msg);
+        // <--- Publish Magnetometer message
+    }
+    // <---- Get Magnetometer data with a timeout of 100 microseconds to not slow down fastest data (IMU)
+
+    // ----> Get Environment data with a timeout of 100 microseconds to not slow down fastest data (IMU)
+    const sl_oc::sensors::data::Environment envData = sensCap.getLastEnvironmentData(100);
+
+    // Process data only if valid
+    if( envData.valid == sl_oc::sensors::data::Environment::NEW_VAL )
+    {
+        // ----> Environment data Debug information
+        RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(9) << "Environment data timestamp: " << static_cast<double>(envData.timestamp)/1e9<< " sec" );
+        if(last_env_ts!=0)
+            RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(envData.timestamp-last_env_ts) << " Hz]");
+        last_env_ts = envData.timestamp;
+        // ---- Environment data Debug information
+
+        // ----> Prepare Environment data messages
+        press_msg.header.stamp.nanosec = envData.timestamp;
+        press_msg.fluid_pressure = envData.press;
+        temp_msg.header.stamp.nanosec = envData.timestamp;
+        temp_msg.temperature = envData.temp;
+        humi_msg.header.stamp.nanosec = envData.timestamp;
+        humi_msg.relative_humidity = envData.humid;
+        // <---- Prepare Environment data messages
+
+        // ---> Publish Environment data messages
+        pressure_pub_->publish(press_msg);
+        temperature_pub_->publish(temp_msg);
+        humidity_pub_->publish(humi_msg);
+        // <--- Publish Environment data messages
+    }
+    // <---- Get Environment data with a timeout of 100 microseconds to not slow down fastest data (IMU)
+
+    // ----> Get Camera temperature data with a timeout of 100 microseconds to not slow down fastest data (IMU)
+
+    // Process data only if valid
+    const sl_oc::sensors::data::Temperature tempData = sensCap.getLastCameraTemperatureData(100);
+    if( tempData.valid == sl_oc::sensors::data::Temperature::NEW_VAL )
+    {
+        // ----> Camera Temperature Debug information
+        RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(9) << "Camera Temperature timestamp: " << static_cast<double>(tempData.timestamp)/1e9<< " sec" );
+        if(last_cam_temp_ts!=0)
+            RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(tempData.timestamp-last_cam_temp_ts) << " Hz]");
+        last_cam_temp_ts = tempData.timestamp;
+        // ---- Camera Temperature Debug information
+
+        // ----> Prepare Camera Temperature message
+        left_cam_temp_msg.header.stamp.nanosec = tempData.timestamp;
+        left_cam_temp_msg.temperature = tempData.temp_left;
+        right_cam_temp_msg.header.stamp.nanosec = tempData.timestamp;
+        right_cam_temp_msg.temperature = tempData.temp_right;
+        // <---- Prepare Camera Temperature message
+
+        // ---> Publish Camera Temperature message
+        left_camera_temperature_pub_->publish(left_cam_temp_msg);
+        right_camera_temperature_pub_->publish(right_cam_temp_msg);
+        // <--- Publish Camera Temperature message
+    }
+    // <---- Get Camera Temperature data with a timeout of 100 microseconds to not slow down fastest data (IMU)
 }
 
 int main(int argc, char* argv[])
