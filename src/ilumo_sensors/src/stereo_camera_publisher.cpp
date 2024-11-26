@@ -1,5 +1,5 @@
 // ----> Includes
-#include "sensor_publishers/stereo_camera_publisher.hpp"
+#include "ilumo_sensors/stereo_camera_publisher.hpp"
 #include "zed2_interface/videocapture.hpp"
 #include "zed2_interface/sensorcapture.hpp"
 
