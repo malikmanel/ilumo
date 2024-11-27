@@ -18,11 +18,14 @@ private:
     rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub_;
   
     rclcpp::TimerBase::SharedPtr point_cloud_timer_;
+    rclcpp::TimerBase::SharedPtr imu_timer_;
 
     void pointcloudCallback();
+    void imuCallback();
 
     std::shared_ptr<blickfeld::scanner> scanner;
-    std::shared_ptr<blickfeld::scanner::point_cloud_stream<blickfeld::protocol::data::Frame> > stream;
+    std::shared_ptr<blickfeld::scanner::point_cloud_stream<blickfeld::protocol::data::Frame> > point_cloud_stream;
+    std::shared_ptr<blickfeld::imu_stream> imu_stream;
 };
 
 #endif // LIDAR_PUBLISHER_HPP

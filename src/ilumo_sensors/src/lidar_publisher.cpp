@@ -15,24 +15,57 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     std::cout << "Connected." << std::endl;
 
     // Create a pointcloud stream object to receive pointclouds
-	auto stream = scanner->get_point_cloud_stream();
-    point_cloud_timer_ = create_wall_timer(2ms, std::bind(&LiDARPublisher::pointcloudCallback, this));
+	auto point_cloud_stream = scanner->get_point_cloud_stream();
+    auto imu_stream = scanner->get_imu_stream();
+
+    // Initialize publishers
+    point_cloud_timer_ = create_wall_timer(15ms, std::bind(&LiDARPublisher::pointcloudCallback, this));
+    imu_timer_ = create_wall_timer(0.8ms, std::bind(&LiDARPublisher::imuCallback, this));
 }
 
 void LiDARPublisher::pointcloudCallback()
 {
-    const blickfeld::protocol::data::Frame frame = stream->recv_frame();
+    const blickfeld::protocol::data::Frame frame = point_cloud_stream->recv_frame();
 
-		/*
-		 * Print information about this frame
-		 *
-		 * Reference implementation of stream operator to clarify available attribute methods:
-		 *      std::ostream& operator<<(std::ostream &strm, const blickfeld::protocol::data::Frame& frame) {
-		 *              return strm << "<Blickfeld Frame " << frame.id() << ": " << frame.total_number_of_returns() << " returns, "
-		 *                      << setprecision(1) << fixed << frame.scan_pattern().horizontal().fov() * 180.0f / M_PI << "x" << frame.scan_pattern().vertical().fov() * 180.0f / M_PI << " FoV, "
-		 *                      << setprecision(0) << fixed << frame.scanlines_size() << " scanlines>";
-		 *      }
-		 */
+	// Iterate through all the scanlines in a frame
+    for (int s_ind = 0; s_ind < frame.scanlines_size(); s_ind++) {
+
+        // also relevant: frame.scanlines(s_ind)
+
+        // Iterate through all the points in a scanline
+        for (int p_ind = 0; p_ind < frame.scanlines(s_ind).points_size(); p_ind++) {
+            auto& point = frame.scanlines(s_ind).points(p_ind);
+
+            // also relevant: point.start_offset_ns
+
+            // Iterate through all the returns for each points
+            // this might not be necessary, maybe the first return is enough
+            for (int r_ind = 0; r_ind < point.returns_size(); r_ind++) {
+                auto& ret = point.returns(r_ind);
+                printf("coordinates: (%f, %f, %f)\n", ret.cartesian(0), ret.cartesian(1), ret.cartesian(2));
+
+                // also relevant: ret.intensity()
+
+            }
+        }
+    }
+}
+
+void LiDARPublisher::imuCallback()
+{
+    const blickfeld::protocol::data::IMU data = imu_stream->recv_burst();
+    // received as bursts of data, so a lower frequency is possible. how do I know how large a burst ist?
+    for (auto sample : data.samples()) {
+			std::cout << "- acc: ["
+				  << std::setprecision(3) << std::fixed
+				  << sample.acceleration(0) << ", "
+				  << sample.acceleration(1) << ", "
+				  << sample.acceleration(2) << "], gyro: ["
+				  << sample.angular_velocity(0) << ", "
+				  << sample.angular_velocity(1) << ", "
+				  << sample.angular_velocity(2) << "]>"
+				  << std::endl;
+		}
 }
 
 int main(int argc, char* argv[])
