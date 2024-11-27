@@ -1,17 +1,16 @@
 // ----> Includes
-#include "ilumo_sensors/stereo_camera_publisher.hpp"
-#include "zed2_interface/videocapture.hpp"
-#include "zed2_interface/sensorcapture.hpp"
-
-#include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/fill_image.hpp>
-
 #include <iostream>
 #include <sstream>
 #include <iomanip>
 #include <thread>
 #include <mutex>
 #include <chrono>
+
+#include <sensor_msgs/fill_image.hpp>
+
+#include "ilumo_sensors/stereo_camera_publisher.hpp"
+#include "zed2_interface/videocapture.hpp"
+#include "zed2_interface/sensorcapture.hpp"
 // <---- Includes
 
 using namespace std::chrono_literals;
@@ -81,18 +80,11 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     videoCap.enableSensorSync(&sensCap);
     // <---- Enable video/sensors synchronization
 
-    // image_timer_ = create_wall_timer(20ms, std::bind(&StereoCameraPublisher::imageCallback, this));
-    sensor_timer_ = create_wall_timer(2ms, std::bind(&StereoCameraPublisher::sensorCallback, this));
-}
-
-void StereoCameraPublisher::imageCallback()
-{
-        // ----> Prepare Image messages
+    // ----> Prepare Image messages
     auto left_image_msg = sensor_msgs::msg::Image();
     auto right_image_msg = sensor_msgs::msg::Image();
 
     // ---> Get frame size
-    int width,height;
     videoCap.getFrameSize(width,height);
     // width /= 2; // This assumes the camera provides both images as one frame, but I don't know how to split them yet
     // <--- Get frame size
@@ -105,25 +97,54 @@ void StereoCameraPublisher::imageCallback()
     right_image_msg.width = width;
     // <---- Prepare Image messages
 
-    uint64_t last_timestamp = 0;
+    // ----> Prepare Sensor messages
+    auto imu_msg = sensor_msgs::msg::Imu();
+    auto mag_msg = sensor_msgs::msg::MagneticField();
+    auto press_msg = sensor_msgs::msg::FluidPressure();
+    auto temp_msg = sensor_msgs::msg::Temperature();
+    auto humi_msg = sensor_msgs::msg::RelativeHumidity();
+    auto left_cam_temp_msg = sensor_msgs::msg::Temperature();
+    auto right_cam_temp_msg = sensor_msgs::msg::Temperature();
+
+    // imu_msg.header.frame_id = ...;
+    // mag_msg.header.frame_id = ...;
+    // press_msg.header.frame_id = ...;
+    // temp_msg.header.frame_id = ...;
+    // humi_msg.header.frame_id = ...;
+    // left_cam_temp_msg.header.frame_id = ...;
+    // right_cam_temp_msg.header.frame_id = ...;
+    // <---- Prepare Sensor messages
+
+    // Previous timestamps to calculate frequency
+    uint64_t last_img_ts = 0;
+    uint64_t last_imu_ts = 0;
+    uint64_t last_mag_ts = 0;
+    uint64_t last_env_ts = 0;
+    uint64_t last_cam_temp_ts = 0;
 
     float frame_fps=0;
 
+    // image_timer_ = create_wall_timer(20ms, std::bind(&StereoCameraPublisher::imageCallback, this));
+    sensor_timer_ = create_wall_timer(2ms, std::bind(&StereoCameraPublisher::sensorCallback, this));
+}
+
+void StereoCameraPublisher::imageCallback()
+{
     // ----> Get Video frame
     // Get last available frame
     const sl_oc::video::Frame frame = videoCap.getLastFrame(1);
 
     // If the frame is valid we can update it
-    if(frame.data!=nullptr && frame.timestamp!=last_timestamp)
+    if(frame.data!=nullptr && frame.timestamp!=last_img_ts)
     {
-        frame_fps = 1e9/static_cast<float>(frame.timestamp-last_timestamp);
-        last_timestamp = frame.timestamp;
+        frame_fps = 1e9/static_cast<float>(frame.timestamp-last_img_ts);
+        last_img_ts = frame.timestamp;
     }
     // <---- Get Video frame
 
     // ----> Video Debug information
-    RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(9) << "Video timestamp: " << static_cast<double>(last_timestamp)/1e9<< " sec");
-    if( last_timestamp!=0 )
+    RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(9) << "Video timestamp: " << static_cast<double>(last_img_ts)/1e9<< " sec");
+    if( last_img_ts!=0 )
         RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << frame_fps << " Hz]");
     // <---- Video Debug information
 
@@ -156,30 +177,6 @@ void StereoCameraPublisher::imageCallback()
 // Sensor acquisition runs at 400Hz, so it must be executed in a different thread
 void StereoCameraPublisher::sensorCallback()
 {
-    // ----> Create message templates
-    auto imu_msg = sensor_msgs::msg::Imu();
-    auto mag_msg = sensor_msgs::msg::MagneticField();
-    auto press_msg = sensor_msgs::msg::FluidPressure();
-    auto temp_msg = sensor_msgs::msg::Temperature();
-    auto humi_msg = sensor_msgs::msg::RelativeHumidity();
-    auto left_cam_temp_msg = sensor_msgs::msg::Temperature();
-    auto right_cam_temp_msg = sensor_msgs::msg::Temperature();
-
-    // imu_msg.header.frame_id = ...;
-    // mag_msg.header.frame_id = ...;
-    // press_msg.header.frame_id = ...;
-    // temp_msg.header.frame_id = ...;
-    // humi_msg.header.frame_id = ...;
-    // left_cam_temp_msg.header.frame_id = ...;
-    // right_cam_temp_msg.header.frame_id = ...;
-    // <---- Create message templates
-
-    // Previous IMU timestamp to calculate frequency, See IMU Debug Info
-    uint64_t last_imu_ts = 0;
-    uint64_t last_mag_ts = 0;
-    uint64_t last_env_ts = 0;
-    uint64_t last_cam_temp_ts = 0;
-
     // ----> Get IMU data
     const sl_oc::sensors::data::Imu imuData = sensCap.getLastIMUData(2000);
 

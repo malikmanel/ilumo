@@ -5,6 +5,13 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+find_path(BLICKFELD_INCLUDE_DIR
+  NAMES scanner.h
+  PATH_SUFFIXES "include" "blickfeld" "scanner")
+find_library(BLICKFELD_LIBRARY
+  NAMES blickfeld blickfeld-scanner
+  PATH_SUFFIXES "lib" "lib32" "lib64")
+
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
@@ -14,6 +21,11 @@ find_package(zed2_interface REQUIRED)
 
 include_directories(
   include
+  ${BLICKFELD_INCLUDE_DIR}
+)
+
+link_libraries(
+  ${BLICKFELD_LIBRARY}
 )
 
 add_executable(lidar_publisher src/lidar_publisher.cpp)
