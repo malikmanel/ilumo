@@ -31,11 +31,9 @@ find_package(ament_cmake REQUIRED)
 include_directories(
   include
   ${HIDAPI_INCLUDE_DIR}
-  ${HIDAPI_INCLUDE_DIR}
 )
 
 link_libraries(
-  ${HIDAPI_LIBRARY}
   ${HIDAPI_LIBRARY}
 )
 
