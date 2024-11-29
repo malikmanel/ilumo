@@ -20,10 +20,10 @@ find_library(HIDAPI_LIBRARY
   PATH_SUFFIXES "lib" "lib32" "lib64")
 
 find_path(LIBUSB_INCLUDE_DIR
-  NAMES libusb.h
+  NAMES libusb.h usb.h
   PATH_SUFFIXES "include" "libusb" "libusb-1.0")
 find_library(LIBUSB_LIBRARY
-  NAMES usb
+  NAMES usb-1.0 libusb usb
   PATH_SUFFIXES "lib" "lib32" "lib64")
 
 find_package(ament_cmake REQUIRED)
@@ -31,10 +31,12 @@ find_package(ament_cmake REQUIRED)
 include_directories(
   include
   ${HIDAPI_INCLUDE_DIR}
+  ${LIBUSB_INCLUDE_DIR}
 )
 
 link_libraries(
   ${HIDAPI_LIBRARY}
+  ${LIBUSB_LIBRARY}
 )
 
 add_library(
