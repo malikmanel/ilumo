@@ -26,7 +26,7 @@ add_executable(lidar_publisher src/lidar_publisher.cpp)
 target_link_libraries(lidar_publisher
   ${BLICKFELD_LIBRARY})
 ament_target_dependencies(lidar_publisher 
-  rclcpp std_msgs sensor_msgs blickfeld-scanner Protobuf)
+  rclcpp std_msgs sensor_msgs Protobuf)
 
 add_executable(stereo_camera_publisher src/stereo_camera_publisher.cpp)
 ament_target_dependencies(stereo_camera_publisher 
