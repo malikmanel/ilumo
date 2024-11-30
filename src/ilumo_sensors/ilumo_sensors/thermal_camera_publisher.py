@@ -21,11 +21,7 @@ class ThermalCameraPublisher(Node):
             self.get_logger().error(f'Connection to thermal camera failed.')
             exit()
 
-        # print out camera info
-        self.get_logger().info(f'Thermal camera info: {self.mi48.camera_info}')
-        self.get_logger().debug(f'Connected port: {connected_port} with name {port_names}')
-
-        # set desired FPS
+        # print out camera infoSensorCapture
         STREAM_FPS = 25
         self.mi48.set_fps(STREAM_FPS)
 

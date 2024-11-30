@@ -49,6 +49,13 @@
 
 #define ZED_OC_VERSION_ATTRIBUTE private: uint32_t mMajorVer = ZED_OC_MAJOR_VERSION, mMinorVer = ZED_OC_MINOR_VERSION, mPatchVer = ZED_OC_PATCH_VERSION
 
+// Debug output
+#define INFO_OUT(lvl,msg) { int status_dem_0; if (lvl>=3) std::cout << "[" << abi::__cxa_demangle(typeid(*this).name(), 0, 0, &status_dem_0) << "] INFO: " << msg << std::endl; }
+#define WARNING_OUT(lvl,msg) { int status_dem_0; if (lvl>=2) std::cerr << "[" << abi::__cxa_demangle(typeid(*this).name(), 0, 0, &status_dem_0) << "] WARNING: " << msg << std::endl; }
+#define ERROR_OUT(lvl,msg) { int status_dem_0; if (lvl>=1) std::cerr << "[" << abi::__cxa_demangle(typeid(*this).name(), 0, 0, &status_dem_0) << "] ERROR: " << msg << std::endl; }
+
+
+
 /*!
  * \brief Get the current system clock as steady clock, so with no jumps even if the system time changes
  * \return the current steady system clock in nanoseconds

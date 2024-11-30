@@ -17,6 +17,8 @@
   <depend>zed_open_capture</depend>
   <depend>blickfeld-scanner</depend>
 
+  <exec_depend>senxor</exec_depend>
+
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 

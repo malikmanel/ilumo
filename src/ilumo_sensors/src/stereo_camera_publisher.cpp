@@ -27,7 +27,6 @@ uint64_t mcu_sync_ts=0;
 
 StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(name)
 {
-    // publishers for all camera info. Still needs barometer and all that. Also prob. split IMU into multiple publishers
     left_image_pub_ = this->create_publisher<sensor_msgs::msg::Image>("stereo_camera/left_camera/image", 10);
     right_image_pub_ = this->create_publisher<sensor_msgs::msg::Image>("stereo_camera/right_camera/image", 10);
     imu_pub_ = this->create_publisher<sensor_msgs::msg::Imu>("stereo_camera/imu", 10);
@@ -42,7 +41,7 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     sl_oc::sensors::SensorCapture::resetVideoModule();
 
     // Set the verbose level
-    sl_oc::VERBOSITY verbose = sl_oc::VERBOSITY::ERROR;
+    sl_oc::VERBOSITY verbose = sl_oc::VERBOSITY::INFO;
 
     // ----> Set the video parameters
     sl_oc::video::VideoParams params;
@@ -56,7 +55,6 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     if( !videoCap.initializeVideo(-1) )
     {
         RCLCPP_ERROR(get_logger(), "Cannot open camera video capture");
-        rclcpp::shutdown();
     }
 
     // Serial number of the connected camera
@@ -69,7 +67,6 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     if( !sensCap.initializeSensors(camSn) ) // Note: we use the serial number acquired by the VideoCapture object
     {
         RCLCPP_ERROR(get_logger(), "Cannot open sensors capture");
-        rclcpp::shutdown();
     }
 
     RCLCPP_INFO_STREAM(get_logger(), "Sensors Capture connected to camera sn: " << sensCap.getSerialNumber());
@@ -114,16 +111,32 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     // <---- Prepare Sensor messages
 
     // Previous timestamps to calculate frequency
-    uint64_t last_img_ts = 0;
-    uint64_t last_imu_ts = 0;
-    uint64_t last_mag_ts = 0;
-    uint64_t last_env_ts = 0;
-    uint64_t last_cam_temp_ts = 0;
+    last_img_ts = 0;
+    last_imu_ts = 0;
+    last_mag_ts = 0;
+    last_env_ts = 0;
+    last_cam_temp_ts = 0;
 
-    float frame_fps=0;
+    frame_fps = 0;
 
-    image_timer_ = create_wall_timer(20ms, std::bind(&StereoCameraPublisher::imageCallback, this));
-    // sensor_timer_ = create_wall_timer(2ms, std::bind(&StereoCameraPublisher::sensorCallback, this));
+    auto callback_group_1 = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    auto callback_group_2 = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+
+    image_timer_ = create_wall_timer(20ms, std::bind(&StereoCameraPublisher::imageCallback, this)
+                                     );
+    //sensor_timer_ = create_wall_timer(2ms, std::bind(&StereoCameraPublisher::sensorCallback, this),
+    //                                       callback_group_2);
+
+    /* Alternative approach: Allows both callbacks to spawn multiple copies of itself if the callbacks occur before completion
+    But might cause problems with shared variables. Solution would be to prepare the messages inside the callbacks and remove
+    the frequency calculation.
+    rclcpp::CallbackGroup::SharedPtr callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+
+    image_timer_ = this->create_wall_timer(20ms, std::bind(&StereoCameraPublisher::imageCallback, this), 
+                                           callback_group);
+    sensor_timer_ = this->create_wall_timer(2ms, std::bind(&StereoCameraPublisher::sensorCallback, this),
+                                           callback_group);
+    */
 }
 
 void StereoCameraPublisher::imageCallback()
@@ -291,9 +304,11 @@ void StereoCameraPublisher::sensorCallback()
 
 int main(int argc, char* argv[])
 {
-  rclcpp::init(argc, argv);
-  auto node = std::make_shared<StereoCameraPublisher>("stereo_camera_publisher");
-  rclcpp::spin(node);
-  rclcpp::shutdown();
-  return 0;
+    rclcpp::init(argc, argv);
+    auto node = std::make_shared<StereoCameraPublisher>("stereo_camera_publisher");
+    rclcpp::executors::MultiThreadedExecutor executor;
+    executor.add_node(node);
+    executor.spin();
+    rclcpp::shutdown();
+    return 0;
 }
