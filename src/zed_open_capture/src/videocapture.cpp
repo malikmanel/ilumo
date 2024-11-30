@@ -18,11 +18,11 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-#include "zed2_interface/videocapture.hpp"
+#include "zed_open_capture/videocapture.hpp"
 
 // #ifdef SENSORS_MOD_AVAILABLE
 
-#include "zed2_interface/sensorcapture.hpp"
+#include "zed_open_capture/sensorcapture.hpp"
 // #endif
 
 #include <sys/stat.h>         // for stat, S_ISCHR

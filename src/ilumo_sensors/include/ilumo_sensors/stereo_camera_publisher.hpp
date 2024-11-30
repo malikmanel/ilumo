@@ -10,8 +10,8 @@
 #include <sensor_msgs/msg/temperature.hpp>
 #include <sensor_msgs/msg/relative_humidity.hpp>
 
-#include "zed2_interface/videocapture.hpp"
-#include "zed2_interface/sensorcapture.hpp"
+#include "zed_open_capture/videocapture.hpp"
+#include "zed_open_capture/sensorcapture.hpp"
 // <---- Includes
 
 class StereoCameraPublisher : public rclcpp::Node

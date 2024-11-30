@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(zed2_interface)
+project(zed_open_capture)
 
 if(NOT CMAKE_C_STANDARD)
   set(CMAKE_C_STANDARD 99)
@@ -46,12 +46,12 @@ add_library(
     src/videocapture.cpp
 )
 
-target_include_directories(zed2_interface
+target_include_directories(zed_open_capture
   PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 
-# ament_target_dependencies(zed2_interface PUBLIC some_dependency)
+# ament_target_dependencies(zed_open_capture PUBLIC some_dependency)
 
 install(
   DIRECTORY include/
@@ -59,7 +59,7 @@ install(
 )
 
 install(
-  TARGETS zed2_interface
+  TARGETS zed_open_capture
   EXPORT export_${PROJECT_NAME}
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib

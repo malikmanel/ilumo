@@ -9,8 +9,6 @@
 #include <sensor_msgs/fill_image.hpp>
 
 #include "ilumo_sensors/stereo_camera_publisher.hpp"
-#include "zed2_interface/videocapture.hpp"
-#include "zed2_interface/sensorcapture.hpp"
 // <---- Includes
 
 using namespace std::chrono_literals;
@@ -124,8 +122,8 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
 
     float frame_fps=0;
 
-    // image_timer_ = create_wall_timer(20ms, std::bind(&StereoCameraPublisher::imageCallback, this));
-    sensor_timer_ = create_wall_timer(2ms, std::bind(&StereoCameraPublisher::sensorCallback, this));
+    image_timer_ = create_wall_timer(20ms, std::bind(&StereoCameraPublisher::imageCallback, this));
+    // sensor_timer_ = create_wall_timer(2ms, std::bind(&StereoCameraPublisher::sensorCallback, this));
 }
 
 void StereoCameraPublisher::imageCallback()

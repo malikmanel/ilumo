@@ -8,10 +8,11 @@ endif()
 # set(CMAKE_FIND_DEBUG_MODE 1)
 
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
-find_package(zed2_interface REQUIRED)
+find_package(zed_open_capture REQUIRED)
 find_package(blickfeld-scanner 2.18.2 REQUIRED full)
 
 find_library(BLICKFELD_LIBRARY
@@ -30,17 +31,17 @@ ament_target_dependencies(lidar_publisher
 
 add_executable(stereo_camera_publisher src/stereo_camera_publisher.cpp)
 ament_target_dependencies(stereo_camera_publisher 
-  rclcpp std_msgs sensor_msgs zed2_interface)
-
-add_executable(thermal_camera_publisher src/thermal_camera_publisher.cpp)
-ament_target_dependencies(thermal_camera_publisher 
-  rclcpp std_msgs sensor_msgs)
+  rclcpp std_msgs sensor_msgs zed_open_capture)
 
 install(TARGETS
   lidar_publisher
   stereo_camera_publisher
-  thermal_camera_publisher
   DESTINATION lib/${PROJECT_NAME}
+)
+
+install(PROGRAMS
+ilumo_sensors/thermal_camera_publisher.py
+DESTINATION lib/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)
