@@ -72,7 +72,7 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     RCLCPP_INFO_STREAM(get_logger(), "Sensors Capture connected to camera sn: " << sensCap->getSerialNumber());
 
     // ----> Enable video/sensors synchronization
-    videoCap->enableSensorSync(sensCap);
+    //videoCap->enableSensorSync(sensCap);
     // <---- Enable video/sensors synchronization
 
     // ----> Prepare Image messages
@@ -124,8 +124,8 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
 
     image_timer_ = create_wall_timer(20ms, std::bind(&StereoCameraPublisher::imageCallback, this)
                                      );
-    //sensor_timer_ = create_wall_timer(2ms, std::bind(&StereoCameraPublisher::sensorCallback, this),
-    //                                       callback_group_2);
+    sensor_timer_ = create_wall_timer(2ms, std::bind(&StereoCameraPublisher::sensorCallback, this)
+                                      );
 
     /* Alternative approach: Allows both callbacks to spawn multiple copies of itself if the callbacks occur before completion
     But might cause problems with shared variables. Solution would be to prepare the messages inside the callbacks and remove
@@ -205,8 +205,8 @@ void StereoCameraPublisher::sensorCallback()
         imu_msg.header.stamp.nanosec = imuData.timestamp;
         // for imu_msg.orientation.x/y/z/w maybe use http://wiki.ros.org/imu_filter_madgwick
         imu_msg.linear_acceleration.x = imuData.aX;
-        imu_msg.linear_acceleration.x = imuData.aY;
-        imu_msg.linear_acceleration.x = imuData.aZ;
+        imu_msg.linear_acceleration.y = imuData.aY;
+        imu_msg.linear_acceleration.z = imuData.aZ;
         imu_msg.angular_velocity.x = imuData.gX;
         imu_msg.angular_velocity.y = imuData.gY;
         imu_msg.angular_velocity.z = imuData.gZ;
