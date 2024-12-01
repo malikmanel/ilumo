@@ -51,28 +51,28 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     // <---- Video parameters
 
     // ----> Create a Video Capture object
-    sl_oc::video::VideoCapture videoCap(params);
-    if( !videoCap.initializeVideo(-1) )
+    videoCap = std::make_shared<sl_oc::video::VideoCapture>(params);
+    if( !videoCap->initializeVideo(-1) )
     {
         RCLCPP_ERROR(get_logger(), "Cannot open camera video capture");
     }
 
     // Serial number of the connected camera
-    int camSn = videoCap.getSerialNumber();
+    int camSn = videoCap->getSerialNumber();
     RCLCPP_INFO_STREAM(get_logger(), "Video Capture connected to camera sn: " << camSn);
     // <---- Create a Video Capture object
 
     // ----> Create a Sensors Capture object
-    sl_oc::sensors::SensorCapture sensCap(verbose);
-    if( !sensCap.initializeSensors(camSn) ) // Note: we use the serial number acquired by the VideoCapture object
+    sensCap = std::make_shared<sl_oc::sensors::SensorCapture>(verbose);
+    if( !sensCap->initializeSensors(camSn) ) // Note: we use the serial number acquired by the VideoCapture object
     {
         RCLCPP_ERROR(get_logger(), "Cannot open sensors capture");
     }
 
-    RCLCPP_INFO_STREAM(get_logger(), "Sensors Capture connected to camera sn: " << sensCap.getSerialNumber());
+    RCLCPP_INFO_STREAM(get_logger(), "Sensors Capture connected to camera sn: " << sensCap->getSerialNumber());
 
     // ----> Enable video/sensors synchronization
-    videoCap.enableSensorSync(&sensCap);
+    videoCap->enableSensorSync(sensCap);
     // <---- Enable video/sensors synchronization
 
     // ----> Prepare Image messages
@@ -80,7 +80,7 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     auto right_image_msg = sensor_msgs::msg::Image();
 
     // ---> Get frame size
-    videoCap.getFrameSize(width,height);
+    videoCap->getFrameSize(width,height);
     // width /= 2; // This assumes the camera provides both images as one frame, but I don't know how to split them yet
     // <--- Get frame size
 
@@ -143,7 +143,7 @@ void StereoCameraPublisher::imageCallback()
 {
     // ----> Get Video frame
     // Get last available frame
-    const sl_oc::video::Frame frame = videoCap.getLastFrame(1);
+    const sl_oc::video::Frame frame = videoCap->getLastFrame(1);
 
     // If the frame is valid we can update it
     if(frame.data!=nullptr && frame.timestamp!=last_img_ts)
@@ -189,7 +189,7 @@ void StereoCameraPublisher::imageCallback()
 void StereoCameraPublisher::sensorCallback()
 {
     // ----> Get IMU data
-    const sl_oc::sensors::data::Imu imuData = sensCap.getLastIMUData(2000);
+    const sl_oc::sensors::data::Imu imuData = sensCap->getLastIMUData(2000);
 
     // Process data only if valid
     if(imuData.valid == sl_oc::sensors::data::Imu::NEW_VAL ) // Uncomment to use only data syncronized with the video frames
@@ -219,7 +219,7 @@ void StereoCameraPublisher::sensorCallback()
     // <---- Get IMU data
 
     // ----> Get Magnetometer data with a timeout of 100 microseconds to not slow down fastest data (IMU)
-    const sl_oc::sensors::data::Magnetometer magData = sensCap.getLastMagnetometerData(100);
+    const sl_oc::sensors::data::Magnetometer magData = sensCap->getLastMagnetometerData(100);
 
     // Process data only if valid
     if( magData.valid == sl_oc::sensors::data::Magnetometer::NEW_VAL )
@@ -245,7 +245,7 @@ void StereoCameraPublisher::sensorCallback()
     // <---- Get Magnetometer data with a timeout of 100 microseconds to not slow down fastest data (IMU)
 
     // ----> Get Environment data with a timeout of 100 microseconds to not slow down fastest data (IMU)
-    const sl_oc::sensors::data::Environment envData = sensCap.getLastEnvironmentData(100);
+    const sl_oc::sensors::data::Environment envData = sensCap->getLastEnvironmentData(100);
 
     // Process data only if valid
     if( envData.valid == sl_oc::sensors::data::Environment::NEW_VAL )
@@ -277,7 +277,7 @@ void StereoCameraPublisher::sensorCallback()
     // ----> Get Camera temperature data with a timeout of 100 microseconds to not slow down fastest data (IMU)
 
     // Process data only if valid
-    const sl_oc::sensors::data::Temperature tempData = sensCap.getLastCameraTemperatureData(100);
+    const sl_oc::sensors::data::Temperature tempData = sensCap->getLastCameraTemperatureData(100);
     if( tempData.valid == sl_oc::sensors::data::Temperature::NEW_VAL )
     {
         // ----> Camera Temperature Debug information

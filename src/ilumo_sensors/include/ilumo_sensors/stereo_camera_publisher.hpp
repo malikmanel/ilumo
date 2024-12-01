@@ -43,8 +43,8 @@ private:
 
     rclcpp::TimerBase::SharedPtr image_timer_;
     rclcpp::TimerBase::SharedPtr sensor_timer_;
-    sl_oc::video::VideoCapture videoCap;
-    sl_oc::sensors::SensorCapture sensCap;
+    std::shared_ptr<sl_oc::video::VideoCapture> videoCap;
+    std::shared_ptr<sl_oc::sensors::SensorCapture> sensCap;
 
     void imageCallback();
     void sensorCallback();
