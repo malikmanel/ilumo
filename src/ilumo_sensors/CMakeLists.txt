@@ -11,6 +11,7 @@ find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(cv_bridge REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(zed_open_capture REQUIRED)
@@ -32,7 +33,7 @@ ament_target_dependencies(lidar_publisher
 
 add_executable(stereo_camera_publisher src/stereo_camera_publisher.cpp)
 ament_target_dependencies(stereo_camera_publisher 
-  rclcpp std_msgs sensor_msgs zed_open_capture OpenCV)
+  rclcpp std_msgs sensor_msgs zed_open_capture OpenCV cv_bridge)
 
 install(TARGETS
   lidar_publisher

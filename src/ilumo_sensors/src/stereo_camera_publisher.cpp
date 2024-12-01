@@ -7,6 +7,7 @@
 #include <chrono>
 
 #include <sensor_msgs/fill_image.hpp>
+#include <cv_bridge/cv_bridge.h>
 
 #include "ilumo_sensors/stereo_camera_publisher.hpp"
 // <---- Includes
@@ -144,20 +145,13 @@ void StereoCameraPublisher::imageCallback()
 {
     // ----> Get Video frame
     // Get last available frame
-    const sl_oc::video::Frame frame = videoCap->getLastFrame(1);
+    const sl_oc::video::Frame frame = videoCap->getLastFrame(10);
 
     // If the frame is valid we can update it
     if(frame.data!=nullptr && frame.timestamp!=last_img_ts)
     {
         frame_fps = 1e9/static_cast<float>(frame.timestamp-last_img_ts);
         last_img_ts = frame.timestamp;
-
-        RCLCPP_INFO_STREAM(get_logger(), "I see dead people: ");
-
-        // ----> Conversion from YUV 4:2:2 to BGR for visualization
-        cv::Mat frameYUV( frame.height, frame.width, CV_8UC2, frame.data);
-        cv::cvtColor(frameYUV,frameBGR, cv::COLOR_YUV2BGR_YUYV);
-        // <---- Conversion from YUV 4:2:2 to BGR for visualization
 
         // ----> Video Debug information
         RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(9) << "Video timestamp: " << static_cast<double>(last_img_ts)/1e9<< " sec");
@@ -170,26 +164,21 @@ void StereoCameraPublisher::imageCallback()
     // ----> Publish frame data
     if(frame.data!=nullptr)
     {
+        // ----> Conversion from YUV 4:2:2 to BGR for visualization
+        cv::Mat frameYUV( frame.height, frame.width, CV_8UC2, frame.data);
+        // <---- Conversion from YUV 4:2:2 to BGR for visualization
+
+        std_msgs::msg::Header header; // empty header
+        // header.frame_id = frame_id;
+        header.stamp.nanosec = frame.timestamp;
+
+        sensor_msgs::msg::Image::SharedPtr msg = cv_bridge::CvImage(header, "yuv422", frameYUV).toImageMsg();  
+
         // How to split data for right image and left image?
         // Images arrive in YUV 4:2:2
-        left_image_msg.data = frameBGR;
-        //sensor_msgs::fillImage(left_image_msg,
-        //                sensor_msgs::image_encodings::YUV422,
-        //                height, // height
-        //                width, // width
-        //                width * sizeof(uint8_t) * 2, // stepSize = width*byte_depth*num_channels
-        //                frame.data);
         left_image_msg.header.stamp.nanosec = frame.timestamp;
-        left_image_pub_->publish(left_image_msg);
-
-        sensor_msgs::fillImage(right_image_msg,
-                        sensor_msgs::image_encodings::YUV422,
-                        height, // height
-                        width, // width
-                        width * sizeof(uint8_t) * 2, // stepSize
-                        frame.data);
-        right_image_msg.header.stamp.nanosec = frame.timestamp;
-        right_image_pub_->publish(right_image_msg);
+        left_image_pub_->publish(*msg);
+        RCLCPP_INFO_STREAM(get_logger(), "I see dead people: 3 " << frame.timestamp);
     }
     // <---- Publish frame data
 }

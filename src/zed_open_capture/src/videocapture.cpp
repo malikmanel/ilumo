@@ -805,13 +805,13 @@ void VideoCapture::grabThreadFunc()
                 mStartTs = getWallTimestamp();
                 //std::cout << "VideoCapture: " << mStartTs << std::endl;
 
-#ifdef SENSORS_MOD_AVAILABLE
+//#ifdef SENSORS_MOD_AVAILABLE
                 if(mSyncEnabled && mSensPtr)
                 {
                     // Synchronize reference timestamp
                     mSensPtr->setStartTimestamp(mStartTs);
                 }
-#endif
+//#endif
 
                 mFirstFrame = false;
                 mInitTs = ts_uvc;
@@ -834,13 +834,13 @@ void VideoCapture::grabThreadFunc()
                 //                last_ts = mLastFrame.timestamp;
                 //                std::cout << "[Video] Frame FPS: " << 1./dT << std::endl;
 
-#ifdef SENSORS_MOD_AVAILABLE
+//#ifdef SENSORS_MOD_AVAILABLE
                 if(mSensReadyToSync)
                 {
                     mSensReadyToSync = false;
                     mSensPtr->updateTimestampOffset(mLastFrame.timestamp);
                 }
-#endif
+//#endif
 
 #ifdef SENSOR_LOG_AVAILABLE
                 // ----> AEC/AGC register logging
