@@ -82,6 +82,7 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     // ---> Get frame size
     videoCap->getFrameSize(width,height);
     // width /= 2; // This assumes the camera provides both images as one frame, but I don't know how to split them yet
+    frameBGR = cv::Mat(height, width, CV_8UC3, cv::Scalar(0,0,0));
     // <--- Get frame size
 
     // left_image_msg.frame_id = camera frame id;
@@ -124,8 +125,8 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
 
     image_timer_ = create_wall_timer(20ms, std::bind(&StereoCameraPublisher::imageCallback, this)
                                      );
-    sensor_timer_ = create_wall_timer(2ms, std::bind(&StereoCameraPublisher::sensorCallback, this)
-                                      );
+    //sensor_timer_ = create_wall_timer(2ms, std::bind(&StereoCameraPublisher::sensorCallback, this)
+    //                                  );
 
     /* Alternative approach: Allows both callbacks to spawn multiple copies of itself if the callbacks occur before completion
     But might cause problems with shared variables. Solution would be to prepare the messages inside the callbacks and remove
@@ -150,26 +151,34 @@ void StereoCameraPublisher::imageCallback()
     {
         frame_fps = 1e9/static_cast<float>(frame.timestamp-last_img_ts);
         last_img_ts = frame.timestamp;
+
+        RCLCPP_INFO_STREAM(get_logger(), "I see dead people: ");
+
+        // ----> Conversion from YUV 4:2:2 to BGR for visualization
+        cv::Mat frameYUV( frame.height, frame.width, CV_8UC2, frame.data);
+        cv::cvtColor(frameYUV,frameBGR, cv::COLOR_YUV2BGR_YUYV);
+        // <---- Conversion from YUV 4:2:2 to BGR for visualization
+
+        // ----> Video Debug information
+        RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(9) << "Video timestamp: " << static_cast<double>(last_img_ts)/1e9<< " sec");
+        if( last_img_ts!=0 )
+            RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << frame_fps << " Hz]");
+        // <---- Video Debug information
     }
     // <---- Get Video frame
-
-    // ----> Video Debug information
-    RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(9) << "Video timestamp: " << static_cast<double>(last_img_ts)/1e9<< " sec");
-    if( last_img_ts!=0 )
-        RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << frame_fps << " Hz]");
-    // <---- Video Debug information
 
     // ----> Publish frame data
     if(frame.data!=nullptr)
     {
         // How to split data for right image and left image?
         // Images arrive in YUV 4:2:2
-        sensor_msgs::fillImage(left_image_msg,
-                        sensor_msgs::image_encodings::YUV422,
-                        height, // height
-                        width, // width
-                        width * sizeof(uint8_t) * 2, // stepSize = width*byte_depth*num_channels
-                        frame.data);
+        left_image_msg.data = frameBGR;
+        //sensor_msgs::fillImage(left_image_msg,
+        //                sensor_msgs::image_encodings::YUV422,
+        //                height, // height
+        //                width, // width
+        //                width * sizeof(uint8_t) * 2, // stepSize = width*byte_depth*num_channels
+        //                frame.data);
         left_image_msg.header.stamp.nanosec = frame.timestamp;
         left_image_pub_->publish(left_image_msg);
 

@@ -10,6 +10,8 @@
 #include <sensor_msgs/msg/temperature.hpp>
 #include <sensor_msgs/msg/relative_humidity.hpp>
 
+#include <opencv2/opencv.hpp>
+
 #include "zed_open_capture/videocapture.hpp"
 #include "zed_open_capture/sensorcapture.hpp"
 // <---- Includes
@@ -56,6 +58,8 @@ private:
     uint64_t last_cam_temp_ts;
     float frame_fps;
     int width,height;
+
+    cv::Mat frameBGR;
 };
 
 #endif // STEREO_CAMERA_PUBLISHER_HPP
