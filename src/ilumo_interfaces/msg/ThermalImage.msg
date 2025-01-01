@@ -1,8 +1,8 @@
-std_msgs/Header header 
+std_msgs/Header header
 
-uint32 height     
-uint32 width     
+uint32 height
+uint32 width
 string encoding
-uint32 step        
+uint32 step
 
 float32[] data

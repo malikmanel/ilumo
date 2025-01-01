@@ -57,8 +57,8 @@ class ThermalCameraPublisher(Node):
         # Prepare image message
         self.img_msg = Image()
         # self.img_msg.header.frame_id =
-        self.data_msg.height = 62
-        self.data_msg.width = 80 
+        self.img_msg.height = 62
+        self.img_msg.width = 80 
         self.img_msg.step = 80
         self.img_msg.encoding = 'mono8'
 
@@ -80,11 +80,11 @@ class ThermalCameraPublisher(Node):
         else:
             self.get_logger().debug(format_framestats(data))
 
-        frame = data_to_frame(data, (80,62), hflip=False)
+        frame = np.flip(data_to_frame(data, (80,62), hflip=False), 1)
 
         self.data_msg.data = frame.astype(np.float32).flatten().tolist()
-
         self.img_msg.data = remap(frame).flatten().tolist()
+
         #self.data_msg.header.stamp = header['timestamp']
         #self.img_msg.header.stamp = header['timestamp']
 
