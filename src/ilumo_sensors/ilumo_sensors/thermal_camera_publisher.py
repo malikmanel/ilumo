@@ -1,25 +1,34 @@
 #!/usr/bin/env python3
 
+import numpy as np
+
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, Temperature
+
+from ilumo_interfaces.msg import ThermalImage
 
 from senxor.mi48 import format_header, format_framestats
-from senxor.utils import data_to_frame, connect_senxor
+from senxor.utils import data_to_frame, connect_senxor, remap
 
 class ThermalCameraPublisher(Node):
     def __init__(self):
         super().__init__("thermal_camera_publisher")
-        self.pub_ = self.create_publisher(Image, "thermal_camera/image", 10)
+        self.data_pub_ = self.create_publisher(ThermalImage, "thermal_camera/thermal_data", 10)
+        self.img_pub_ = self.create_publisher(Image, "thermal_camera/image", 10)
+        self.temp_pub_ = self.create_publisher(Temperature, "thermal_camera/sensor_temperature", 10)
 
         # Make an instance of the MI48, attaching USB for 
         # both control and data interface.
-        # can try connect_senxor(src='/dev/ttyS3') or similar if default cannot be found
-        self.mi48, connected_port, port_names = connect_senxor(src='dev/bus/usb/003/024')
+        # 'src=0' should refer to the first usb device with 
+        # vendor ID 1046 and product ID 45058 or 45088
+        self.mi48, connected_port, _ = connect_senxor(src=0)
 
         if self.mi48 is None:
-            self.get_logger().error(f'Connection to thermal camera failed.')
+            self.get_logger().error('Connection to thermal camera failed.')
             exit()
+
+        self.get_logger().info(f'Connected to thermal camera at port {connected_port}.')
 
         # print out camera infoSensorCapture
         STREAM_FPS = 25
@@ -35,14 +44,26 @@ class ThermalCameraPublisher(Node):
         self.mi48.get_sens_factor()
 
         # initiate continuous frame acquisition
-        with_header = True
-        self.mi48.start(stream=True, with_header=with_header)
+        self.mi48.start(stream=True, with_header=True)
+
+        # Prepare data message
+        self.data_msg = ThermalImage()
+        # self.img_msg.header.frame_id =
+        self.data_msg.height = 62
+        self.data_msg.width = 80 
+        self.data_msg.step = 80*4
+        self.data_msg.encoding = '32FC1'
 
         # Prepare image message
-        self.msg = Image()
-        # msg.header.frame_id =
-        self.msg.height = 62
-        self.msg.width = 80 
+        self.img_msg = Image()
+        # self.img_msg.header.frame_id =
+        self.data_msg.height = 62
+        self.data_msg.width = 80 
+        self.img_msg.step = 80
+        self.img_msg.encoding = 'mono8'
+
+        # Prepare temperature message
+        self.temp_msg = Temperature()
         
         self.timer_ = self.create_timer(0.04, self.thermalcameraCallback)
 
@@ -50,8 +71,7 @@ class ThermalCameraPublisher(Node):
         data, header = self.mi48.read()
 
         if data is None:
-            self.get_logger().error('Thermal camera received NONE data received instead of GFRA')
-            self.mi48.stop()
+            self.get_logger().error('Thermal camera received NONE data instead of GFRA')
             return
 
         # 
@@ -60,14 +80,20 @@ class ThermalCameraPublisher(Node):
         else:
             self.get_logger().debug(format_framestats(data))
 
-        self.get_logger().info(f'Thermal camera temperature: {header["senxor_temperature"]}')
-
         frame = data_to_frame(data, (80,62), hflip=False)
 
-        self.msg.header.stamp = header['timestamp']
-        self.msg.data = frame
+        self.data_msg.data = frame.astype(np.float32).flatten().tolist()
 
-        self.pub_.publish(self.msg)
+        self.img_msg.data = remap(frame).flatten().tolist()
+        #self.data_msg.header.stamp = header['timestamp']
+        #self.img_msg.header.stamp = header['timestamp']
+
+        self.temp_msg.temperature = header['senxor_temperature']
+        #self.temp_msg.header.stamp = header['timestamp']
+
+        self.data_pub_.publish(self.data_msg)
+        self.img_pub_.publish(self.img_msg)
+        self.temp_pub_.publish(self.temp_msg)
 
 
 def main():

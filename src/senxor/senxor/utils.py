@@ -81,7 +81,7 @@ def connect_senxor(src=None, name=None):
     port_names = []
     for p in list_ports.comports():
         if p.vid == MI_VID and p.pid in MI_PIDs:
-            port = p.description.split()[-1][1:-1]
+            port = p.description
             port_names.append(port)
             if port_name is not None and port_name != port: continue
             if cam_index is not None and cam_index != len(port_names)-1: continue
