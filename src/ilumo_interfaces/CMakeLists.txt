@@ -11,6 +11,8 @@ find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/ThermalImage.msg"
+  # "msg/IMUMessage.msg"
+  "msg/IMUBurst.msg"
   DEPENDENCIES std_msgs
 )
 

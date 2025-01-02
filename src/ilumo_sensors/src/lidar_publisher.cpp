@@ -23,6 +23,10 @@ void addPointCloudField(sensor_msgs::msg::PointCloud2& point_cloud_msg,
 
 LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
 {
+    point_cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("lidar_camera/point_cloud", 10);
+    avg_imu_pub_ = this->create_publisher<sensor_msgs::msg::Imu>("lidar_camera/avg_imu", 10);
+    imu_burst_pub = this->create_publisher<ilumo_interfaces::msg::IMUBurst>("lidar_camera/imu_burst", 10);
+
     std::string scanner_ip_or_host = "localhost";
 
     // Create a connection to the device.
@@ -113,6 +117,10 @@ void LiDARPublisher::imuCallback()
 {
     const blickfeld::protocol::data::IMU data = imu_stream->recv_burst();
     // received as bursts of data, so a lower frequency is possible. how do I know how large a burst ist?
+
+    const auto number_of_samples = data.packed().length();
+
+    point_cloud_msg->data.resize(number_of_samples * point_cloud_msg->point_step);
 
     auto timestamp = data.start_time_ns();
     float total_ax = 0.0;

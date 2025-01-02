@@ -4,6 +4,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include <ilumo_interfaces/msg/IMUBurst.hpp>
 
 #include <blickfeld/scanner.h>
 
@@ -15,9 +16,12 @@ public:
 
 private:
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr point_cloud_pub_;
-    rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub_;
+    rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr avg_imu_pub_;
+    rclcpp::Publisher<ilumo_interfaces::msg::IMUBurst>::SharedPtr imu_burst_pub;
 
     sensor_msgs::msg::PointCloud2 *point_cloud_msg;
+    sensor_msgs::msg::Imu avg_imu_msg;
+    ilumo_interfaces::msg::IMUBurst imu_burst_msg;
   
     rclcpp::TimerBase::SharedPtr point_cloud_timer_;
     rclcpp::TimerBase::SharedPtr imu_timer_;
