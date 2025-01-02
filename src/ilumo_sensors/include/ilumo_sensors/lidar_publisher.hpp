@@ -16,6 +16,8 @@ public:
 private:
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr point_cloud_pub_;
     rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub_;
+
+    sensor_msgs::msg::PointCloud2 *point_cloud_msg;
   
     rclcpp::TimerBase::SharedPtr point_cloud_timer_;
     rclcpp::TimerBase::SharedPtr imu_timer_;

@@ -6,6 +6,21 @@
 
 using namespace std::chrono_literals;
 
+template <typename FieldT>
+void addPointCloudField(sensor_msgs::msg::PointCloud2& point_cloud_msg,
+                        const std::string& name, 
+                        uint32_t offset,
+                        uint8_t datatype) 
+{
+  sensor_msgs::msg::PointField field;
+  field.name = name;
+  field.count = 1;
+  field.datatype = datatype;
+  field.offset = offset;
+  point_cloud_msg.fields.push_back(field);
+  point_cloud_msg.point_step += sizeof(FieldT);
+}
+
 LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
 {
     std::string scanner_ip_or_host = "localhost";
@@ -18,6 +33,26 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
 	auto point_cloud_stream = scanner->get_point_cloud_stream();
     auto imu_stream = scanner->get_imu_stream();
 
+    // Create message
+    auto point_cloud_msg = std::make_unique<sensor_msgs::msg::PointCloud2>();
+
+    addPointCloudField<float>(std::ref(*point_cloud_msg), "x", point_cloud_msg->point_step,
+                              sensor_msgs::msg::PointField::FLOAT32);
+    addPointCloudField<float>(std::ref(*point_cloud_msg), "y", point_cloud_msg->point_step,
+                              sensor_msgs::msg::PointField::FLOAT32);
+    addPointCloudField<float>(std::ref(*point_cloud_msg), "z", point_cloud_msg->point_step,
+                              sensor_msgs::msg::PointField::FLOAT32);
+    addPointCloudField<uint32_t>(std::ref(*point_cloud_msg), "intensity", point_cloud_msg->point_step,
+                                 sensor_msgs::msg::PointField::UINT32);
+    addPointCloudField<uint32_t>(std::ref(*point_cloud_msg), "ambient_light", point_cloud_msg->point_step,
+                                 sensor_msgs::msg::PointField::UINT32);
+    addPointCloudField<float>(std::ref(*point_cloud_msg), "time_offset", point_cloud_msg->point_step,
+                                 sensor_msgs::msg::PointField::FLOAT32);
+    addPointCloudField<uint32_t>(std::ref(*point_cloud_msg), "return_id", point_cloud_msg->point_step,
+                                 sensor_msgs::msg::PointField::UINT32);
+    addPointCloudField<uint32_t>(std::ref(*point_cloud_msg), "point_id", point_cloud_msg->point_step,
+                                 sensor_msgs::msg::PointField::UINT32);
+
     // Initialize publishers
     point_cloud_timer_ = create_wall_timer(15ms, std::bind(&LiDARPublisher::pointcloudCallback, this));
     imu_timer_ = create_wall_timer(0.8ms, std::bind(&LiDARPublisher::imuCallback, this));
@@ -27,16 +62,28 @@ void LiDARPublisher::pointcloudCallback()
 {
     const blickfeld::protocol::data::Frame frame = point_cloud_stream->recv_frame();
 
+    const auto number_of_points = frame.total_number_of_returns(); // change to total_number_of_points if we ignore returns
+
+    /// reserve memory
+    point_cloud_msg->data.resize(number_of_points * point_cloud_msg->point_step);
+
+    /// set point cloud message data
+    // point_cloud_msg->header.frame_id = frame_id
+    point_cloud_msg->header.stamp.nanosec = frame.start_time_ns();
+    point_cloud_msg->is_dense = false;
+    point_cloud_msg->height = 1;
+    point_cloud_msg->width = number_of_points;
+    point_cloud_msg->row_step = point_cloud_msg->point_step * point_cloud_msg->width;
+
+    int point_index = 0;
+
 	// Iterate through all the scanlines in a frame
     for (int s_ind = 0; s_ind < frame.scanlines_size(); s_ind++) {
-
-        // also relevant: frame.scanlines(s_ind).start_offset_ns
 
         // Iterate through all the points in a scanline
         for (int p_ind = 0; p_ind < frame.scanlines(s_ind).points_size(); p_ind++) {
             auto& point = frame.scanlines(s_ind).points(p_ind);
-
-            // also relevant: point.start_offset_ns
+            auto time_offset = frame.scanlines(s_ind).start_offset_ns() + point.start_offset_ns();
 
             // Iterate through all the returns for each points
             // this might not be necessary, maybe the first return is enough
@@ -45,10 +92,21 @@ void LiDARPublisher::pointcloudCallback()
                 printf("coordinates: (%f, %f, %f)\n", ret.cartesian(0), ret.cartesian(1), ret.cartesian(2));
 
                 // also relevant: ret.intensity()
+                point_cloud_msg->data[point_index * point_cloud_msg->point_step + point_cloud_msg->fields[0].offset] = ret.cartesian(0);
+                point_cloud_msg->data[point_index * point_cloud_msg->point_step + point_cloud_msg->fields[1].offset] = ret.cartesian(0);
+                point_cloud_msg->data[point_index * point_cloud_msg->point_step + point_cloud_msg->fields[2].offset] = ret.cartesian(0);
+                point_cloud_msg->data[point_index * point_cloud_msg->point_step + point_cloud_msg->fields[3].offset] = ret.intensity();
+                point_cloud_msg->data[point_index * point_cloud_msg->point_step + point_cloud_msg->fields[4].offset] = point.ambient_light_level();
+                point_cloud_msg->data[point_index * point_cloud_msg->point_step + point_cloud_msg->fields[5].offset] = time_offset;
+                point_cloud_msg->data[point_index * point_cloud_msg->point_step + point_cloud_msg->fields[6].offset] = ret.id();
+                point_cloud_msg->data[point_index * point_cloud_msg->point_step + point_cloud_msg->fields[7].offset] = point.id();
 
+                point_index++;
             }
         }
     }
+
+    point_cloud_pub_->publish(*point_cloud_msg);
 }
 
 void LiDARPublisher::imuCallback()
