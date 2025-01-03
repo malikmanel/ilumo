@@ -1,3 +1,3 @@
 string frame_id
 
-IMUMessage[] burst
+ilumo_interfaces/IMUSingle[] burst

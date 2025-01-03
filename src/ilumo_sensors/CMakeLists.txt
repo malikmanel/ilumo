@@ -5,7 +5,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# set(CMAKE_FIND_DEBUG_MODE 1)
+#set(CMAKE_FIND_DEBUG_MODE 1)
 
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
@@ -15,6 +15,7 @@ find_package(cv_bridge REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(zed_open_capture REQUIRED)
+find_package(ilumo_interfaces REQUIRED)
 find_package(blickfeld-scanner 2.18.2 REQUIRED full)
 
 find_library(BLICKFELD_LIBRARY
@@ -29,7 +30,7 @@ add_executable(lidar_publisher src/lidar_publisher.cpp)
 target_link_libraries(lidar_publisher
   ${BLICKFELD_LIBRARY})
 ament_target_dependencies(lidar_publisher 
-  rclcpp std_msgs sensor_msgs Protobuf)
+  rclcpp std_msgs sensor_msgs ilumo_interfaces Protobuf)
 
 add_executable(stereo_camera_publisher src/stereo_camera_publisher.cpp)
 ament_target_dependencies(stereo_camera_publisher 

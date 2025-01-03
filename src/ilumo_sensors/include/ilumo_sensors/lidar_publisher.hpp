@@ -4,7 +4,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
-#include <ilumo_interfaces/msg/IMUBurst.hpp>
+#include <ilumo_interfaces/msg/imu_burst.hpp>
 
 #include <blickfeld/scanner.h>
 
