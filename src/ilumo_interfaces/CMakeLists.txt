@@ -13,8 +13,8 @@ find_package(builtin_interfaces REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/ThermalImage.msg"
-  "msg/IMUSingle.msg"
-  "msg/IMUBurst.msg"
+  "msg/ImuSingle.msg"
+  "msg/ImuBurst.msg"
   DEPENDENCIES std_msgs geometry_msgs builtin_interfaces
 )
 

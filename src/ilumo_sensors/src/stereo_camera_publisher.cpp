@@ -28,6 +28,7 @@ uint64_t mcu_sync_ts=0;
 
 StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(name)
 {
+    // ----> Create the publishers
     left_image_pub_ = this->create_publisher<sensor_msgs::msg::Image>("stereo_camera/left_camera/image", 10);
     right_image_pub_ = this->create_publisher<sensor_msgs::msg::Image>("stereo_camera/right_camera/image", 10);
     imu_pub_ = this->create_publisher<sensor_msgs::msg::Imu>("stereo_camera/imu", 10);
@@ -37,7 +38,9 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     humidity_pub_ = this->create_publisher<sensor_msgs::msg::RelativeHumidity>("stereo_camera/environment/humidity", 10);;
     left_camera_temperature_pub_ = this->create_publisher<sensor_msgs::msg::Temperature>("stereo_camera/left_camera/temperature", 10);;
     right_camera_temperature_pub_ = this->create_publisher<sensor_msgs::msg::Temperature>("stereo_camera/right_camera/temperature", 10);;
+    // <---- Create the publishers
 
+    // Reset Modules
     sl_oc::sensors::SensorCapture::resetSensorModule();
     sl_oc::sensors::SensorCapture::resetVideoModule();
 

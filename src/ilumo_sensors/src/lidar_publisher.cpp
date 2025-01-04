@@ -1,5 +1,6 @@
 // ----> Includes
 #include <chrono>
+#include "ilumo_interfaces/msg/imu_single.hpp"
 
 #include "ilumo_sensors/lidar_publisher.hpp"
 // <---- Includes
@@ -24,21 +25,30 @@ void addPointCloudField(sensor_msgs::msg::PointCloud2& point_cloud_msg,
 LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
 {
     point_cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("lidar_camera/point_cloud", 10);
+    imu_burst_pub_ = this->create_publisher<ilumo_interfaces::msg::ImuBurst>("lidar_camera/imu_burst", 10);
     avg_imu_pub_ = this->create_publisher<sensor_msgs::msg::Imu>("lidar_camera/avg_imu", 10);
-    imu_burst_pub = this->create_publisher<ilumo_interfaces::msg::IMUBurst>("lidar_camera/imu_burst", 10);
+    temp_pub_ = this->create_publisher<sensor_msgs::msg::Temperature>("lidar_camera/temperature", 10);
 
     std::string scanner_ip_or_host = "localhost";
 
-    // Create a connection to the device.
+    // ----> Creating a connection to the device.
     std::shared_ptr<blickfeld::scanner> scanner = blickfeld::scanner::connect(scanner_ip_or_host);
-    std::cout << "Connected." << std::endl;
+    RCLCPP_INFO_STREAM(get_logger(),"Connected to the Blickfeld sensor at address " << scanner_ip_or_host);
+    // <---- Creating a connection to the device.
 
     // Create a pointcloud stream object to receive pointclouds
 	auto point_cloud_stream = scanner->get_point_cloud_stream();
     auto imu_stream = scanner->get_imu_stream();
 
-    // Create message
+    // ----> Prepare LiDAR messages
     auto point_cloud_msg = std::make_unique<sensor_msgs::msg::PointCloud2>();
+    auto imu_burst_msg = ilumo_interfaces::msg::ImuBurst();
+    auto avg_imu_msg = sensor_msgs::msg::Imu();
+    auto temp_msg = sensor_msgs::msg::Temperature();
+
+    // point_cloud_msg->header.frame_id = 
+    // imu_burst_msg.frame_id = 
+    // avg_imu_msg.header.frame_id = 
 
     addPointCloudField<float>(std::ref(*point_cloud_msg), "x", point_cloud_msg->point_step,
                               sensor_msgs::msg::PointField::FLOAT32);
@@ -56,10 +66,12 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
                                  sensor_msgs::msg::PointField::UINT32);
     addPointCloudField<uint32_t>(std::ref(*point_cloud_msg), "point_id", point_cloud_msg->point_step,
                                  sensor_msgs::msg::PointField::UINT32);
+    // <---- Prepare LiDAR messages
 
-    // Initialize publishers
+    // ----> Initialize publishers
     point_cloud_timer_ = create_wall_timer(15ms, std::bind(&LiDARPublisher::pointcloudCallback, this));
     imu_timer_ = create_wall_timer(0.8ms, std::bind(&LiDARPublisher::imuCallback, this));
+    // <---- Initialize publishers
 }
 
 void LiDARPublisher::pointcloudCallback()
@@ -111,6 +123,7 @@ void LiDARPublisher::pointcloudCallback()
     }
 
     point_cloud_pub_->publish(*point_cloud_msg);
+    temp_pub_->publish(temp_msg);
 }
 
 void LiDARPublisher::imuCallback()
@@ -120,9 +133,7 @@ void LiDARPublisher::imuCallback()
 
     const auto number_of_samples = data.packed().length();
 
-    point_cloud_msg->data.resize(number_of_samples * point_cloud_msg->point_step);
-
-    auto timestamp = data.start_time_ns();
+    auto burst_timestamp = data.start_time_ns();
     float total_ax = 0.0;
     float total_ay = 0.0;
     float total_az = 0.0;
@@ -130,28 +141,48 @@ void LiDARPublisher::imuCallback()
     float total_ry = 0.0;
     float total_rz = 0.0;
 
-    int count = 0;
-
     for (auto sample : data.samples()) {
-            auto sample_timestamp = timestamp + sample.start_offset_ns();
-            total_ax += sample.acceleration(0);
-            total_ay += sample.acceleration(1);
-            total_az += sample.acceleration(2);
-            total_rx += sample.angular_velocity(0);
-            total_ry += sample.angular_velocity(1);
-            total_rz += sample.angular_velocity(2);
-		}
+        // Creating a single IMU msg
+        auto single_imu_msg = ilumo_interfaces::msg::ImuSingle();
+
+        // Filling IMU msg with data
+        single_imu_msg.stamp.nanosec = burst_timestamp + sample.start_offset_ns();
+        single_imu_msg.angular_velocity.x = sample.angular_velocity(0);
+        single_imu_msg.angular_velocity.y = sample.angular_velocity(1);
+        single_imu_msg.angular_velocity.z = sample.angular_velocity(2);
+        single_imu_msg.linear_acceleration.x = sample.acceleration(0);
+        single_imu_msg.linear_acceleration.y = sample.acceleration(1);
+        single_imu_msg.linear_acceleration.z = sample.acceleration(2);
+
+        // Adding IMU msg to burst msg
+        imu_burst_msg.burst.push_back(single_imu_msg);
+
+        // Integrating IMU msgs
+        total_rx += sample.angular_velocity(0);
+        total_ry += sample.angular_velocity(1);
+        total_rz += sample.angular_velocity(2);
+        total_ax += sample.acceleration(0);
+        total_ay += sample.acceleration(1);
+        total_az += sample.acceleration(2);
+    }
 
     // This assumes measurements at a constant frequency
     // Otherwise next_timestamp - current time_stamp, but hard to get
     // Maybe we could do current_timestamp - last_timestamp
     // Direction of time should theoretically not matter
-    total_ax /= count;
-    total_ay /= count;
-    total_az /= count;
-    total_rx /= count;
-    total_ry /= count;
-    total_rz /= count;
+
+    // Filling mean IMU message with data
+    avg_imu_msg.header.stamp.nanosec = burst_timestamp;
+    avg_imu_msg.angular_velocity.x = total_rx / number_of_samples;
+    avg_imu_msg.angular_velocity.y = total_ry / number_of_samples;
+    avg_imu_msg.angular_velocity.z = total_rz / number_of_samples;
+    avg_imu_msg.linear_acceleration.x = total_ax / number_of_samples;
+    avg_imu_msg.linear_acceleration.y = total_ay / number_of_samples;
+    avg_imu_msg.linear_acceleration.z = total_az / number_of_samples;
+
+    // Publishing messages
+    imu_burst_pub_->publish(imu_burst_msg);
+    avg_imu_pub_->publish(avg_imu_msg);
 }
 
 int main(int argc, char* argv[])
