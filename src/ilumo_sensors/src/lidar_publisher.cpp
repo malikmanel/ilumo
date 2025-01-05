@@ -14,13 +14,52 @@ void addPointCloudField(sensor_msgs::msg::PointCloud2& point_cloud_msg,
                         uint32_t offset,
                         uint8_t datatype) 
 {
-  sensor_msgs::msg::PointField field;
-  field.name = name;
-  field.count = 1;
-  field.datatype = datatype;
-  field.offset = offset;
-  point_cloud_msg.fields.push_back(field);
-  point_cloud_msg.point_step += sizeof(FieldT);
+    sensor_msgs::msg::PointField field;
+    field.name = name;
+    field.count = 1;
+    field.datatype = datatype;
+    field.offset = offset;
+    point_cloud_msg.fields.push_back(field);
+    point_cloud_msg.point_step += sizeof(FieldT);
+}
+
+sensor_msgs::msg::PointCloud2::SharedPtr makePointCloudMessage()
+{
+    auto point_cloud_msg = sensor_msgs::msg::PointCloud2::SharedPtr();
+    addPointCloudField<float>(std::ref(*point_cloud_msg), 
+                              "x", 
+                              point_cloud_msg->point_step,
+                              sensor_msgs::msg::PointField::FLOAT32);
+    addPointCloudField<float>(std::ref(*point_cloud_msg), 
+                              "y", 
+                              point_cloud_msg->point_step,
+                              sensor_msgs::msg::PointField::FLOAT32);
+    addPointCloudField<float>(std::ref(*point_cloud_msg), 
+                              "z", 
+                              point_cloud_msg->point_step,
+                              sensor_msgs::msg::PointField::FLOAT32);
+    addPointCloudField<uint32_t>(std::ref(*point_cloud_msg), 
+                                 "intensity", 
+                                 point_cloud_msg->point_step,
+                                 sensor_msgs::msg::PointField::UINT32);
+    addPointCloudField<uint32_t>(std::ref(*point_cloud_msg), 
+                                 "ambient_light", 
+                                 point_cloud_msg->point_step,
+                                 sensor_msgs::msg::PointField::UINT32);
+    addPointCloudField<float>(std::ref(*point_cloud_msg), 
+                              "time_offset", 
+                              point_cloud_msg->point_step,
+                              sensor_msgs::msg::PointField::FLOAT32);
+    addPointCloudField<uint32_t>(std::ref(*point_cloud_msg), 
+                                 "return_id", 
+                                 point_cloud_msg->point_step,
+                                 sensor_msgs::msg::PointField::UINT32);
+    addPointCloudField<uint32_t>(std::ref(*point_cloud_msg), 
+                                 "point_id", 
+                                 point_cloud_msg->point_step,
+                                 sensor_msgs::msg::PointField::UINT32);
+
+    return point_cloud_msg;
 }
 
 LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
@@ -54,56 +93,31 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     // <---- Create a pointcloud stream object to receive pointclouds
 
     // ----> Prepare LiDAR messages
-    auto side_point_cloud_msg = std::make_unique<sensor_msgs::msg::PointCloud2>();
+    auto side_point_cloud_msg = makePointCloudMessage();
     auto side_imu_burst_msg = ilumo_interfaces::msg::ImuBurst();
     auto side_avg_imu_msg = sensor_msgs::msg::Imu();
     auto side_temp_msg = sensor_msgs::msg::Temperature();
 
-    auto bottom_point_cloud_msg = std::make_unique<sensor_msgs::msg::PointCloud2>();
+    auto bottom_point_cloud_msg = makePointCloudMessage();
     auto bottom_imu_burst_msg = ilumo_interfaces::msg::ImuBurst();
     auto bottom_avg_imu_msg = sensor_msgs::msg::Imu();
     auto bottom_temp_msg = sensor_msgs::msg::Temperature();
 
-    // point_cloud_msg->header.frame_id = 
-    // imu_burst_msg.frame_id = 
-    // avg_imu_msg.header.frame_id = 
+    // side_point_cloud_msg->header.frame_id = 
+    // side_imu_burst_msg.frame_id = 
+    // side_avg_imu_msg.header.frame_id = 
+    // side_temp_msg.header.frame_id =
 
-    addPointCloudField<float>(std::ref(*side_point_cloud_msg), "x", side_point_cloud_msg->point_step,
-                              sensor_msgs::msg::PointField::FLOAT32);
-    addPointCloudField<float>(std::ref(*side_point_cloud_msg), "y", side_point_cloud_msg->point_step,
-                              sensor_msgs::msg::PointField::FLOAT32);
-    addPointCloudField<float>(std::ref(*side_point_cloud_msg), "z", side_point_cloud_msg->point_step,
-                              sensor_msgs::msg::PointField::FLOAT32);
-    addPointCloudField<uint32_t>(std::ref(*side_point_cloud_msg), "intensity", side_point_cloud_msg->point_step,
-                                 sensor_msgs::msg::PointField::UINT32);
-    addPointCloudField<uint32_t>(std::ref(*side_point_cloud_msg), "ambient_light", side_point_cloud_msg->point_step,
-                                 sensor_msgs::msg::PointField::UINT32);
-    addPointCloudField<float>(std::ref(*side_point_cloud_msg), "time_offset", side_point_cloud_msg->point_step,
-                                 sensor_msgs::msg::PointField::FLOAT32);
-    addPointCloudField<uint32_t>(std::ref(*side_point_cloud_msg), "return_id", side_point_cloud_msg->point_step,
-                                 sensor_msgs::msg::PointField::UINT32);
-    addPointCloudField<uint32_t>(std::ref(*side_point_cloud_msg), "point_id", side_point_cloud_msg->point_step,
-                                 sensor_msgs::msg::PointField::UINT32);
-
-    addPointCloudField<float>(std::ref(*bottom_point_cloud_msg), "x", bottom_point_cloud_msg->point_step,
-                              sensor_msgs::msg::PointField::FLOAT32);
-    addPointCloudField<float>(std::ref(*bottom_point_cloud_msg), "y", bottom_point_cloud_msg->point_step,
-                              sensor_msgs::msg::PointField::FLOAT32);
-    addPointCloudField<float>(std::ref(*bottom_point_cloud_msg), "z", bottom_point_cloud_msg->point_step,
-                              sensor_msgs::msg::PointField::FLOAT32);
-    addPointCloudField<uint32_t>(std::ref(*bottom_point_cloud_msg), "intensity", bottom_point_cloud_msg->point_step,
-                                 sensor_msgs::msg::PointField::UINT32);
-    addPointCloudField<uint32_t>(std::ref(*bottom_point_cloud_msg), "ambient_light", bottom_point_cloud_msg->point_step,
-                                 sensor_msgs::msg::PointField::UINT32);
-    addPointCloudField<float>(std::ref(*bottom_point_cloud_msg), "time_offset", bottom_point_cloud_msg->point_step,
-                                 sensor_msgs::msg::PointField::FLOAT32);
-    addPointCloudField<uint32_t>(std::ref(*bottom_point_cloud_msg), "return_id", bottom_point_cloud_msg->point_step,
-                                 sensor_msgs::msg::PointField::UINT32);
-    addPointCloudField<uint32_t>(std::ref(*bottom_point_cloud_msg), "point_id", bottom_point_cloud_msg->point_step,
-                                 sensor_msgs::msg::PointField::UINT32);
+    // bottom_point_cloud_msg->header.frame_id = 
+    // bottom_imu_burst_msg.frame_id = 
+    // bottom_avg_imu_msg.header.frame_id = 
+    // bottom_temp_msg.header.frame_id =
     // <---- Prepare LiDAR messages
 
     // ----> Initialize publishers
+    auto side_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+    auto bottom_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+
     side_point_cloud_timer_ = create_wall_timer(15ms, [this,
                                                        side_point_cloud_stream = this->side_point_cloud_stream, 
                                                        side_point_cloud_msg = this->side_point_cloud_msg,
@@ -112,7 +126,8 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
                                                         side_point_cloud_stream,
                                                         side_point_cloud_msg,
                                                         side_point_cloud_pub_
-                                                        ); }
+                                                        ); },
+                                                side_callback_group
                                                );
     side_imu_timer_ = create_wall_timer(0.8ms, [this,
                                                 side_imu_stream = this->side_imu_stream,
@@ -126,7 +141,8 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
                                                     side_avg_imu_msg,
                                                     side_imu_burst_pub_,
                                                     side_avg_imu_pub_
-                                                ); }
+                                                ); },
+                                        side_callback_group
                                        );                                           
 
     bottom_point_cloud_timer_ = create_wall_timer(15ms, [this,
@@ -137,7 +153,8 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
                                                             bottom_point_cloud_stream,
                                                             bottom_point_cloud_msg,
                                                             bottom_point_cloud_pub_
-                                                         ); }
+                                                         ); },
+                                                  bottom_callback_group
                                                  );
     bottom_imu_timer_ = create_wall_timer(0.8ms, [this,
                                                   bottom_imu_stream = this->bottom_imu_stream,
@@ -151,13 +168,14 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
                                                     bottom_avg_imu_msg,
                                                     bottom_imu_burst_pub_,
                                                     bottom_avg_imu_pub_
-                                                  ); }
+                                                  ); },
+                                          bottom_callback_group
                                          );   
     // <---- Initialize publishers
 }
 
 void LiDARPublisher::pointcloudCallback(std::shared_ptr<blickfeld::scanner::point_cloud_stream<blickfeld::protocol::data::Frame>> point_cloud_stream,
-                                        sensor_msgs::msg::PointCloud2 *point_cloud_msg,
+                                        sensor_msgs::msg::PointCloud2::SharedPtr point_cloud_msg,
                                         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr point_cloud_pub_)
 {
     const blickfeld::protocol::data::Frame frame = point_cloud_stream->recv_frame();

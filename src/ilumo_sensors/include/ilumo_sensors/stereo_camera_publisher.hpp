@@ -45,11 +45,14 @@ private:
 
     rclcpp::TimerBase::SharedPtr image_timer_;
     rclcpp::TimerBase::SharedPtr sensor_timer_;
-    std::shared_ptr<sl_oc::video::VideoCapture> videoCap;
-    std::shared_ptr<sl_oc::sensors::SensorCapture> sensCap;
+
+    rclcpp::CallbackGroup::SharedPtr callback_group;
 
     void imageCallback();
     void sensorCallback();
+
+    std::shared_ptr<sl_oc::video::VideoCapture> videoCap;
+    std::shared_ptr<sl_oc::sensors::SensorCapture> sensCap;
 
     uint64_t last_img_ts;
     uint64_t last_imu_ts;

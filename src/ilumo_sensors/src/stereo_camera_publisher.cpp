@@ -123,24 +123,12 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
 
     frame_fps = 0;
 
-    auto callback_group_1 = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
-    auto callback_group_2 = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
-
-    image_timer_ = create_wall_timer(20ms, std::bind(&StereoCameraPublisher::imageCallback, this)
-                                     );
-    //sensor_timer_ = create_wall_timer(2ms, std::bind(&StereoCameraPublisher::sensorCallback, this)
-    //                                  );
-
-    /* Alternative approach: Allows both callbacks to spawn multiple copies of itself if the callbacks occur before completion
-    But might cause problems with shared variables. Solution would be to prepare the messages inside the callbacks and remove
-    the frequency calculation.
-    rclcpp::CallbackGroup::SharedPtr callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+    auto callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
 
     image_timer_ = this->create_wall_timer(20ms, std::bind(&StereoCameraPublisher::imageCallback, this), 
                                            callback_group);
     sensor_timer_ = this->create_wall_timer(2ms, std::bind(&StereoCameraPublisher::sensorCallback, this),
                                            callback_group);
-    */
 }
 
 void StereoCameraPublisher::imageCallback()
