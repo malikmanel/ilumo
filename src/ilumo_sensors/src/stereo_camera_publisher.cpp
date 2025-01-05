@@ -173,8 +173,8 @@ void StereoCameraPublisher::imageCallback()
         // <---- Conversion from YUV 4:2:2 to BGR for visualization
 
         // ----> Split image
-        cv::Mat left_image = frameBGR(cv::Rect(0, 0, left_image_msg.width, frame.height)).clone()
-        cv::Mat right_image = frameBGR(cv::Rect(left_image_msg.width, 0, right_image_msg.width, frame.height)).clone()
+        cv::Mat left_image = frameBGR(cv::Rect(0, 0, left_image_msg.width, frame.height)).clone();
+        cv::Mat right_image = frameBGR(cv::Rect(left_image_msg.width, 0, right_image_msg.width, frame.height)).clone();
         // <---- Split image
 
         // ----> Preparing image messages
@@ -182,8 +182,8 @@ void StereoCameraPublisher::imageCallback()
         // header.frame_id = frame_id;
         header.stamp.nanosec = frame.timestamp;
 
-        sensor_msgs::msg::Image left_img_msg = cv_bridge::CvImage(header, "bgr8", left_image).toImageMsg();  
-        sensor_msgs::msg::Image right_img_msg = cv_bridge::CvImage(header, "bgr8", right_image).toImageMsg();  
+        sensor_msgs::msg::Image left_img_msg = *cv_bridge::CvImage(header, "bgr8", left_image).toImageMsg();  
+        sensor_msgs::msg::Image right_img_msg = *cv_bridge::CvImage(header, "bgr8", right_image).toImageMsg();  
         // <---- Preparing image messages
 
         // ----> Publishing image messages
