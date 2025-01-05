@@ -84,9 +84,8 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     auto right_image_msg = sensor_msgs::msg::Image();
 
     // ---> Get frame size
-    videoCap->getFrameSize(width,height);
-    // width /= 2; // This assumes the camera provides both images as one frame, but I don't know how to split them yet
-    frameBGR = cv::Mat(height, width, CV_8UC3, cv::Scalar(0,0,0));
+    videoCap->getFrameSize(width, height);
+    width /= 2; // This assumes the camera provides both images as one frame, but I don't know how to split them yet
     // <--- Get frame size
 
     // left_image_msg.frame_id = camera frame id;
@@ -168,20 +167,30 @@ void StereoCameraPublisher::imageCallback()
     if(frame.data!=nullptr)
     {
         // ----> Conversion from YUV 4:2:2 to BGR for visualization
-        cv::Mat frameYUV( frame.height, frame.width, CV_8UC2, frame.data);
+        cv::Mat frameYUV(frame.height, frame.width, CV_8UC2, frame.data);
+        cv::Mat frameBGR(frame.height, frame.height, CV_8UC3, cv::Scalar(0,0,0));
+        cv::cvtColor(frameYUV,frameBGR, cv::COLOR_YUV2BGR_YUYV);
         // <---- Conversion from YUV 4:2:2 to BGR for visualization
 
+        // ----> Split image
+        cv::Mat left_image = frameBGR(cv::Rect(0, 0, left_image_msg.width, frame.height)).clone()
+        cv::Mat right_image = frameBGR(cv::Rect(left_image_msg.width, 0, right_image_msg.width, frame.height)).clone()
+        // <---- Split image
+
+        // ----> Preparing image messages
         std_msgs::msg::Header header; // empty header
         // header.frame_id = frame_id;
         header.stamp.nanosec = frame.timestamp;
 
-        sensor_msgs::msg::Image::SharedPtr msg = cv_bridge::CvImage(header, "yuv422", frameYUV).toImageMsg();  
+        sensor_msgs::msg::Image left_img_msg = cv_bridge::CvImage(header, "bgr8", left_image).toImageMsg();  
+        sensor_msgs::msg::Image right_img_msg = cv_bridge::CvImage(header, "bgr8", right_image).toImageMsg();  
+        // <---- Preparing image messages
 
-        // How to split data for right image and left image?
-        // Images arrive in YUV 4:2:2
-        left_image_msg.header.stamp.nanosec = frame.timestamp;
-        left_image_pub_->publish(*msg);
+        // ----> Publishing image messages
+        left_image_pub_->publish(left_img_msg);
+        right_image_pub_->publish(right_img_msg);
         RCLCPP_INFO_STREAM(get_logger(), "I see dead people: 3 " << frame.timestamp);
+        // <---- Publishing image messages
     }
     // <---- Publish frame data
 }
