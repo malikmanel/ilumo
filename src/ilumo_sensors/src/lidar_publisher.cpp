@@ -123,7 +123,6 @@ void LiDARPublisher::pointcloudCallback()
     }
 
     point_cloud_pub_->publish(*point_cloud_msg);
-    temp_pub_->publish(temp_msg);
 }
 
 void LiDARPublisher::imuCallback()
