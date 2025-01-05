@@ -85,23 +85,23 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     // <---- Creating a connection to the device.
 
     // ----> Create a pointcloud stream object to receive pointclouds
-	auto side_point_cloud_stream = side_scanner->get_point_cloud_stream();
-    auto side_imu_stream = bottom_scanner->get_imu_stream();
+	side_point_cloud_stream = side_scanner->get_point_cloud_stream();
+    side_imu_stream = bottom_scanner->get_imu_stream();
 
-    auto bottom_point_cloud_stream = side_scanner->get_point_cloud_stream();
-    auto bottom_imu_stream = bottom_scanner->get_imu_stream();
+    bottom_point_cloud_stream = side_scanner->get_point_cloud_stream();
+    bottom_imu_stream = bottom_scanner->get_imu_stream();
     // <---- Create a pointcloud stream object to receive pointclouds
 
     // ----> Prepare LiDAR messages
-    auto side_point_cloud_msg = makePointCloudMessage();
-    auto side_imu_burst_msg = ilumo_interfaces::msg::ImuBurst();
-    auto side_avg_imu_msg = sensor_msgs::msg::Imu();
-    auto side_temp_msg = sensor_msgs::msg::Temperature();
+    side_point_cloud_msg = makePointCloudMessage();
+    side_imu_burst_msg = ilumo_interfaces::msg::ImuBurst();
+    side_avg_imu_msg = sensor_msgs::msg::Imu();
+    side_temp_msg = sensor_msgs::msg::Temperature();
 
-    auto bottom_point_cloud_msg = makePointCloudMessage();
-    auto bottom_imu_burst_msg = ilumo_interfaces::msg::ImuBurst();
-    auto bottom_avg_imu_msg = sensor_msgs::msg::Imu();
-    auto bottom_temp_msg = sensor_msgs::msg::Temperature();
+    bottom_point_cloud_msg = makePointCloudMessage();
+    bottom_imu_burst_msg = ilumo_interfaces::msg::ImuBurst();
+    bottom_avg_imu_msg = sensor_msgs::msg::Imu();
+    bottom_temp_msg = sensor_msgs::msg::Temperature();
 
     // side_point_cloud_msg->header.frame_id = 
     // side_imu_burst_msg.frame_id = 
@@ -115,8 +115,8 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     // <---- Prepare LiDAR messages
 
     // ----> Initialize publishers
-    auto side_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
-    auto bottom_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+    side_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+    bottom_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
 
     side_point_cloud_timer_ = create_wall_timer(15ms, [this,
                                                        side_point_cloud_stream = this->side_point_cloud_stream, 

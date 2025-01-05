@@ -80,8 +80,8 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     // <---- Enable video/sensors synchronization
 
     // ----> Prepare Image messages
-    auto left_image_msg = sensor_msgs::msg::Image();
-    auto right_image_msg = sensor_msgs::msg::Image();
+    left_image_msg = sensor_msgs::msg::Image();
+    right_image_msg = sensor_msgs::msg::Image();
 
     // ---> Get frame size
     videoCap->getFrameSize(width, height);
@@ -97,13 +97,13 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     // <---- Prepare Image messages
 
     // ----> Prepare Sensor messages
-    auto imu_msg = sensor_msgs::msg::Imu();
-    auto mag_msg = sensor_msgs::msg::MagneticField();
-    auto press_msg = sensor_msgs::msg::FluidPressure();
-    auto temp_msg = sensor_msgs::msg::Temperature();
-    auto humi_msg = sensor_msgs::msg::RelativeHumidity();
-    auto left_cam_temp_msg = sensor_msgs::msg::Temperature();
-    auto right_cam_temp_msg = sensor_msgs::msg::Temperature();
+    imu_msg = sensor_msgs::msg::Imu();
+    mag_msg = sensor_msgs::msg::MagneticField();
+    press_msg = sensor_msgs::msg::FluidPressure();
+    temp_msg = sensor_msgs::msg::Temperature();
+    humi_msg = sensor_msgs::msg::RelativeHumidity();
+    left_cam_temp_msg = sensor_msgs::msg::Temperature();
+    right_cam_temp_msg = sensor_msgs::msg::Temperature();
 
     // imu_msg.header.frame_id = ...;
     // mag_msg.header.frame_id = ...;
@@ -123,7 +123,7 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
 
     frame_fps = 0;
 
-    auto callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+    callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
 
     image_timer_ = this->create_wall_timer(20ms, std::bind(&StereoCameraPublisher::imageCallback, this), 
                                            callback_group);
@@ -134,12 +134,13 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
 void StereoCameraPublisher::imageCallback()
 {
     // ----> Get Video frame
-    // Get last available frame
     const sl_oc::video::Frame frame = videoCap->getLastFrame(10);
+    // <---- Get Video frame
 
     // If the frame is valid we can update it
     if(frame.data!=nullptr && frame.timestamp!=last_img_ts)
     {
+        std::cout << "YABAYABAYEEEET" << std::endl;
         frame_fps = 1e9/static_cast<float>(frame.timestamp-last_img_ts);
         last_img_ts = frame.timestamp;
 
@@ -148,12 +149,7 @@ void StereoCameraPublisher::imageCallback()
         if( last_img_ts!=0 )
             RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << frame_fps << " Hz]");
         // <---- Video Debug information
-    }
-    // <---- Get Video frame
 
-    // ----> Publish frame data
-    if(frame.data!=nullptr)
-    {
         // ----> Conversion from YUV 4:2:2 to BGR for visualization
         cv::Mat frameYUV(frame.height, frame.width, CV_8UC2, frame.data);
         cv::Mat frameBGR(frame.height, frame.height, CV_8UC3, cv::Scalar(0,0,0));
@@ -177,10 +173,8 @@ void StereoCameraPublisher::imageCallback()
         // ----> Publishing image messages
         left_image_pub_->publish(left_img_msg);
         right_image_pub_->publish(right_img_msg);
-        RCLCPP_INFO_STREAM(get_logger(), "I see dead people: 3 " << frame.timestamp);
         // <---- Publishing image messages
     }
-    // <---- Publish frame data
 }
 
 // Sensor acquisition runs at 400Hz, so it must be executed in a different thread
