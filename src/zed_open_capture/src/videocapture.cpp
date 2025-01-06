@@ -975,7 +975,7 @@ int VideoCapture::ll_VendorControl(uint8_t *buf, int len, int readMode, bool saf
 
         if(mParams.verbose)
         {
-            std::string msg = std::string("CBS SET failed") +
+            std::string msg = std::string("CBS SET failed. ") +
                     std::string(err) +
                     std::string(". (System code: ") +
                     std::to_string(res) +

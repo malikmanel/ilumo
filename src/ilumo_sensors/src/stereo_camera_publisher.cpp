@@ -76,7 +76,10 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     RCLCPP_INFO_STREAM(get_logger(), "Sensors Capture connected to camera sn: " << sensCap->getSerialNumber());
 
     // ----> Enable video/sensors synchronization
-    //videoCap->enableSensorSync(sensCap);
+    if( !videoCap->enableSensorSync(sensCap.get()) )
+    {
+        RCLCPP_ERROR(get_logger(), "Cannot sync the camera to the sensors.");
+    }
     // <---- Enable video/sensors synchronization
 
     // ----> Prepare Image messages
@@ -85,7 +88,7 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
 
     // ---> Get frame size
     videoCap->getFrameSize(width, height);
-    width /= 2; // This assumes the camera provides both images as one frame, but I don't know how to split them yet
+    width /= 2;
     // <--- Get frame size
 
     // left_image_msg.frame_id = camera frame id;
@@ -127,8 +130,8 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
 
     image_timer_ = this->create_wall_timer(20ms, std::bind(&StereoCameraPublisher::imageCallback, this), 
                                            callback_group);
-    sensor_timer_ = this->create_wall_timer(2ms, std::bind(&StereoCameraPublisher::sensorCallback, this),
-                                           callback_group);
+    //sensor_timer_ = this->create_wall_timer(2ms, std::bind(&StereoCameraPublisher::sensorCallback, this),
+    //                                       callback_group);
 }
 
 void StereoCameraPublisher::imageCallback()
