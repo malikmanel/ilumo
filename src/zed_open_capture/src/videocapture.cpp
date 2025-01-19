@@ -20,10 +20,10 @@
 
 #include "zed_open_capture/videocapture.hpp"
 
-// #ifdef SENSORS_MOD_AVAILABLE
+#ifdef SENSORS_MOD_AVAILABLE
 
 #include "zed_open_capture/sensorcapture.hpp"
-// #endif
+#endif
 
 #include <sys/stat.h>         // for stat, S_ISCHR
 #include <errno.h>            // for errno, EBADRQC, EINVAL, ENOBUFS, ENOENT
@@ -146,6 +146,8 @@ VideoCapture::VideoCapture(VideoParams params)
 
 VideoCapture::~VideoCapture()
 {
+    std::string ver = "Closing down: ZED Open Capture - Camera module";
+    INFO_OUT(mParams.verbose,ver);
     reset();
 }
 
@@ -805,13 +807,13 @@ void VideoCapture::grabThreadFunc()
                 mStartTs = getWallTimestamp();
                 //std::cout << "VideoCapture: " << mStartTs << std::endl;
 
-//#ifdef SENSORS_MOD_AVAILABLE
+#ifdef SENSORS_MOD_AVAILABLE
                 if(mSyncEnabled && mSensPtr)
                 {
                     // Synchronize reference timestamp
                     mSensPtr->setStartTimestamp(mStartTs);
                 }
-//#endif
+#endif
 
                 mFirstFrame = false;
                 mInitTs = ts_uvc;
@@ -834,13 +836,13 @@ void VideoCapture::grabThreadFunc()
                 //                last_ts = mLastFrame.timestamp;
                 //                std::cout << "[Video] Frame FPS: " << 1./dT << std::endl;
 
-//#ifdef SENSORS_MOD_AVAILABLE
+#ifdef SENSORS_MOD_AVAILABLE
                 if(mSensReadyToSync)
                 {
                     mSensReadyToSync = false;
                     mSensPtr->updateTimestampOffset(mLastFrame.timestamp);
                 }
-//#endif
+#endif
 
 #ifdef SENSOR_LOG_AVAILABLE
                 // ----> AEC/AGC register logging
@@ -2148,7 +2150,7 @@ bool VideoCapture::resetAGCAECregisters() {
 }
 #endif
 
-// #ifdef SENSORS_MOD_AVAILABLE
+#ifdef SENSORS_MOD_AVAILABLE
 bool VideoCapture::enableSensorSync( sensors::SensorCapture* sensCap )
 {
     if(!sensCap)
@@ -2164,7 +2166,7 @@ bool VideoCapture::enableSensorSync( sensors::SensorCapture* sensCap )
 
     return true;
 }
-// #endif
+#endif
 
 }
 

@@ -20,10 +20,10 @@
 
 #include "zed_open_capture/sensorcapture.hpp"
 
-// #ifdef VIDEO_MOD_AVAILABLE
+#ifdef VIDEO_MOD_AVAILABLE
 
 #include "zed_open_capture/videocapture.hpp"
-// #endif
+#endif
 
 #include <sstream>
 #include <cmath>              // for round
@@ -559,7 +559,7 @@ void SensorCapture::grabThreadFunc()
     mGrabRunning = false;
 }
 
-// #ifdef VIDEO_MOD_AVAILABLE
+#ifdef VIDEO_MOD_AVAILABLE
 void SensorCapture::updateTimestampOffset( uint64_t frame_ts)
 {
     static int64_t offset_sum = 0;
@@ -580,7 +580,7 @@ void SensorCapture::updateTimestampOffset( uint64_t frame_ts)
         count=0;
     }
 }
-// #endif
+#endif
 
 bool SensorCapture::sendPing() {
     if( !mDevHandle )

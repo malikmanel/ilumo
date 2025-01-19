@@ -29,17 +29,24 @@
 
 #define LOG_SEP ","
 
-// #ifdef VIDEO_MOD_AVAILABLE
+#ifndef VIDEO_MOD_AVAILABLE
+#define VIDEO_MOD_AVAILABLE
+#endif
+#ifndef SENSORS_MOD_AVAILABLE
+#define SENSORS_MOD_AVAILABLE
+#endif
+
+#ifdef VIDEO_MOD_AVAILABLE
 
 #include "videocapture_def.hpp"
 
 namespace sl_oc {
 
-// #ifdef SENSORS_MOD_AVAILABLE
+#ifdef SENSORS_MOD_AVAILABLE
 namespace sensors {
 class SensorCapture;
 }
-// #endif
+#endif
 
 namespace video {
 
@@ -380,7 +387,7 @@ public:
 #endif
 
 
-// #ifdef SENSORS_MOD_AVAILABLE
+#ifdef SENSORS_MOD_AVAILABLE
     /*!
      * \brief Enable synchronizations between Camera frame and Sensors timestamps
      * \param sensCap pointer to  SensorCapture object
@@ -393,7 +400,7 @@ public:
      *        be synchronized to the last Sensor Data
      */
     inline void setReadyToSync(){ mSensReadyToSync=true; }
-// #endif
+#endif
 
         bool resetAGCAECregisters();
 
@@ -523,18 +530,18 @@ private:
 #endif
 
 
-// #ifdef SENSORS_MOD_AVAILABLE
+#ifdef SENSORS_MOD_AVAILABLE
     bool mSyncEnabled=false;            //!< Indicates if a  SensorCapture object is synchronized
     sensors::SensorCapture* mSensPtr;   //!< Pointer to the synchronized  SensorCapture object
 
     bool mSensReadyToSync=false;        //!< Indicates if the MCU received a HW sync signal
-// #endif
+#endif
 };
 
 }
 
 }
-// #endif
+#endif
 
 /** \example zed_oc_video_example.cpp
  * Example of how to use the VideoCapture class to get raw video frames and show the stream on screen using the

@@ -50,7 +50,7 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     // ----> Set the video parameters
     sl_oc::video::VideoParams params;
     params.res = sl_oc::video::RESOLUTION::HD720;
-    params.fps = sl_oc::video::FPS::FPS_30;
+    params.fps = sl_oc::video::FPS::FPS_60;
     params.verbose = verbose;
     // <---- Video parameters
 
@@ -63,9 +63,10 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
 
     // Serial number of the connected camera
     int camSn = videoCap->getSerialNumber();
-    RCLCPP_INFO_STREAM(get_logger(), "Video Capture connected to camera sn: " << camSn);
+    RCLCPP_INFO_STREAM(get_logger(), "Video Capture connected to camera sn: " << camSn << " [" << videoCap->getDeviceName() << "]");
     // <---- Create a Video Capture object
 
+    #ifdef SENSOR_STREAM
     // ----> Create a Sensors Capture object
     sensCap = std::make_shared<sl_oc::sensors::SensorCapture>(verbose);
     if( !sensCap->initializeSensors(camSn) ) // Note: we use the serial number acquired by the VideoCapture object
@@ -81,6 +82,7 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
         RCLCPP_ERROR(get_logger(), "Cannot sync the camera to the sensors.");
     }
     // <---- Enable video/sensors synchronization
+    #endif
 
     // ----> Prepare Image messages
     left_image_msg = sensor_msgs::msg::Image();
@@ -130,8 +132,10 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
 
     image_timer_ = this->create_wall_timer(20ms, std::bind(&StereoCameraPublisher::imageCallback, this), 
                                            callback_group);
-    //sensor_timer_ = this->create_wall_timer(2ms, std::bind(&StereoCameraPublisher::sensorCallback, this),
-    //                                       callback_group);
+    #ifdef SENSOR_STREAM
+    sensor_timer_ = this->create_wall_timer(2ms, std::bind(&StereoCameraPublisher::sensorCallback, this),
+                                           callback_group);
+    #endif
 }
 
 void StereoCameraPublisher::imageCallback()
@@ -143,7 +147,6 @@ void StereoCameraPublisher::imageCallback()
     // If the frame is valid we can update it
     if(frame.data!=nullptr && frame.timestamp!=last_img_ts)
     {
-        std::cout << "YABAYABAYEEEET" << std::endl;
         frame_fps = 1e9/static_cast<float>(frame.timestamp-last_img_ts);
         last_img_ts = frame.timestamp;
 
@@ -154,9 +157,9 @@ void StereoCameraPublisher::imageCallback()
         // <---- Video Debug information
 
         // ----> Conversion from YUV 4:2:2 to BGR for visualization
-        cv::Mat frameYUV(frame.height, frame.width, CV_8UC2, frame.data);
-        cv::Mat frameBGR(frame.height, frame.height, CV_8UC3, cv::Scalar(0,0,0));
-        cv::cvtColor(frameYUV,frameBGR, cv::COLOR_YUV2BGR_YUYV);
+        cv::Mat frameYUV = cv::Mat( frame.height, frame.width, CV_8UC2, frame.data );
+        cv::Mat frameBGR;
+        cv::cvtColor(frameYUV,frameBGR,cv::COLOR_YUV2BGR_YUYV);
         // <---- Conversion from YUV 4:2:2 to BGR for visualization
 
         // ----> Split image
