@@ -29,13 +29,6 @@
 
 #define LOG_SEP ","
 
-#ifndef VIDEO_MOD_AVAILABLE
-#define VIDEO_MOD_AVAILABLE
-#endif
-#ifndef SENSORS_MOD_AVAILABLE
-#define SENSORS_MOD_AVAILABLE
-#endif
-
 #ifdef VIDEO_MOD_AVAILABLE
 
 #include "videocapture_def.hpp"

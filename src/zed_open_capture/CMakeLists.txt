@@ -12,6 +12,8 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+add_definitions(-DSENSORS_MOD_AVAILABLE -DVIDEO_MOD_AVAILABLE)
+
 find_path(HIDAPI_INCLUDE_DIR
   NAMES hidapi.h
   PATH_SUFFIXES "include" "hidapi" "hidapi")

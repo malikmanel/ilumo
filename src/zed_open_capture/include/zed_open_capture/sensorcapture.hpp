@@ -28,13 +28,6 @@
 #include <map>
 #include <mutex>
 
-#ifndef VIDEO_MOD_AVAILABLE
-#define VIDEO_MOD_AVAILABLE
-#endif
-#ifndef SENSORS_MOD_AVAILABLE
-#define SENSORS_MOD_AVAILABLE
-#endif
-
 #ifdef SENSORS_MOD_AVAILABLE
 
 #include "sensorcapture_def.hpp"

@@ -50,7 +50,7 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     // ----> Set the video parameters
     sl_oc::video::VideoParams params;
     params.res = sl_oc::video::RESOLUTION::HD720;
-    params.fps = sl_oc::video::FPS::FPS_60;
+    params.fps = sl_oc::video::FPS::FPS_30;
     params.verbose = verbose;
     // <---- Video parameters
 

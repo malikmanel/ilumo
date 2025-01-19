@@ -7,6 +7,8 @@ endif()
 
 #set(CMAKE_FIND_DEBUG_MODE 1)
 
+add_definitions(-DSENSORS_MOD_AVAILABLE -DVIDEO_MOD_AVAILABLE)
+
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
