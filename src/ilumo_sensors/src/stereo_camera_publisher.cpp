@@ -44,10 +44,6 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     right_camera_temperature_pub_ = this->create_publisher<sensor_msgs::msg::Temperature>("stereo_camera/right_camera/temperature", 10);
     // <---- Create the publishers
 
-    // Reset Modules
-    sl_oc::sensors::SensorCapture::resetSensorModule();
-    sl_oc::sensors::SensorCapture::resetVideoModule();
-
     // Set the verbose level
     sl_oc::VERBOSITY verbose = sl_oc::VERBOSITY::INFO;
 
