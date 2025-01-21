@@ -89,11 +89,7 @@ def connect_senxor(src=None, name=None):
                 ser = Serial(p.device)
             except SerialException:
                 # port already open
-                if port_name is not None:
-                    logging.warning(f'{port_name} seems already open')
-                if cam_index is not None:
-                    logging.warning(f'Thermal image source {cam_index}'
-                                     ' seems already open')
+                logging.warning(f'Could not connecto to {p.device}. This might mean access was denied. Try running: sudo chmod 666 {p.device}.')
                 continue
             usb = USB_Interface(ser)
             connected_port = port
