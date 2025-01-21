@@ -14,6 +14,10 @@
 
 using namespace std::chrono_literals;
 
+#ifndef SENSOR_STREAM
+#define SENSOR_STREAM
+#endif
+
 // ----> Functions
 // Sensor acquisition runs at 400Hz, so it must be executed in a different thread
 
