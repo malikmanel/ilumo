@@ -25,6 +25,7 @@ public:
 private:
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr left_image_pub_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr right_image_pub_;
+    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr stereo_image_pub_;
     rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub_;
     rclcpp::Publisher<sensor_msgs::msg::MagneticField>::SharedPtr magnetometer_pub_;
     rclcpp::Publisher<sensor_msgs::msg::FluidPressure>::SharedPtr pressure_pub_;
@@ -35,6 +36,7 @@ private:
 
     sensor_msgs::msg::Image left_image_msg;
     sensor_msgs::msg::Image right_image_msg;
+    sensor_msgs::msg::Image stereo_image_msg;
     sensor_msgs::msg::Imu imu_msg;
     sensor_msgs::msg::MagneticField mag_msg;
     sensor_msgs::msg::FluidPressure press_msg;

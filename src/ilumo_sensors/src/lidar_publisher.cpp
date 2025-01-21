@@ -187,7 +187,8 @@ void LiDARPublisher::pointcloudCallback(std::shared_ptr<blickfeld::scanner::poin
 
     /// set point cloud message data
     // point_cloud_msg->header.frame_id = frame_id
-    point_cloud_msg->header.stamp.nanosec = frame.start_time_ns();
+    point_cloud_msg->header.stamp.sec = frame.start_time_ns() / 1000000000;
+    point_cloud_msg->header.stamp.nanosec = frame.start_time_ns() % 1000000000;
     point_cloud_msg->is_dense = false;
     point_cloud_msg->height = 1;
     point_cloud_msg->width = number_of_points;
@@ -251,6 +252,9 @@ void LiDARPublisher::imuCallback(std::shared_ptr<blickfeld::imu_stream> imu_stre
         auto single_imu_msg = ilumo_interfaces::msg::ImuSingle();
 
         // Filling IMU msg with data
+        auto imu_timestamp = burst_timestamp + sample.start_offset_ns();
+        single_imu_msg.stamp.sec = imu_timestamp / 1000000000;
+        single_imu_msg.stamp.nanosec = imu_timestamp % 1000000000;
         single_imu_msg.stamp.nanosec = burst_timestamp + sample.start_offset_ns();
         single_imu_msg.angular_velocity.x = sample.angular_velocity(0);
         single_imu_msg.angular_velocity.y = sample.angular_velocity(1);
@@ -276,8 +280,9 @@ void LiDARPublisher::imuCallback(std::shared_ptr<blickfeld::imu_stream> imu_stre
     // Maybe we could do current_timestamp - last_timestamp
     // Direction of time should theoretically not matter
 
-    // Filling mean IMU message with data
-    avg_imu_msg.header.stamp.nanosec = burst_timestamp;
+    // Filling avg IMU message with data
+    avg_imu_msg.header.stamp.sec = burst_timestamp / 1000000000;
+    avg_imu_msg.header.stamp.nanosec = burst_timestamp % 1000000000;
     avg_imu_msg.angular_velocity.x = total_rx / number_of_samples;
     avg_imu_msg.angular_velocity.y = total_ry / number_of_samples;
     avg_imu_msg.angular_velocity.z = total_rz / number_of_samples;

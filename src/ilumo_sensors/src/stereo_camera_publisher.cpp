@@ -13,11 +13,7 @@
 // <---- Includes
 
 using namespace std::chrono_literals;
-
-#ifndef SENSOR_STREAM
-#define SENSOR_STREAM
-#endif
-
+//#define SENSOR_SYNC
 // ----> Functions
 // Sensor acquisition runs at 400Hz, so it must be executed in a different thread
 
@@ -35,6 +31,7 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     // ----> Create the publishers
     left_image_pub_ = this->create_publisher<sensor_msgs::msg::Image>("stereo_camera/left_camera/image", 10);
     right_image_pub_ = this->create_publisher<sensor_msgs::msg::Image>("stereo_camera/right_camera/image", 10);
+    stereo_image_pub_ = this->create_publisher<sensor_msgs::msg::Image>("stereo_camera/stereo_image", 10);
     imu_pub_ = this->create_publisher<sensor_msgs::msg::Imu>("stereo_camera/imu", 10);
     magnetometer_pub_ = this->create_publisher<sensor_msgs::msg::MagneticField>("stereo_camera/magnetometer", 10);
     pressure_pub_ = this->create_publisher<sensor_msgs::msg::FluidPressure>("stereo_camera/environment/pressure", 10);
@@ -66,7 +63,6 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     RCLCPP_INFO_STREAM(get_logger(), "Video Capture connected to camera sn: " << camSn << " [" << videoCap->getDeviceName() << "]");
     // <---- Create a Video Capture object
 
-    #ifdef SENSOR_STREAM
     // ----> Create a Sensors Capture object
     sensCap = std::make_shared<sl_oc::sensors::SensorCapture>(verbose);
     if( !sensCap->initializeSensors(camSn) ) // Note: we use the serial number acquired by the VideoCapture object
@@ -76,6 +72,7 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
 
     RCLCPP_INFO_STREAM(get_logger(), "Sensors Capture connected to camera sn: " << sensCap->getSerialNumber());
 
+    #ifdef SENSOR_SYNC
     // ----> Enable video/sensors synchronization
     if( !videoCap->enableSensorSync(sensCap.get()) )
     {
@@ -87,18 +84,21 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     // ----> Prepare Image messages
     left_image_msg = sensor_msgs::msg::Image();
     right_image_msg = sensor_msgs::msg::Image();
+    stereo_image_msg = sensor_msgs::msg::Image();
 
     // ---> Get frame size
     videoCap->getFrameSize(width, height);
-    width /= 2;
     // <--- Get frame size
 
     // left_image_msg.frame_id = camera frame id;
     left_image_msg.height = height;
-    left_image_msg.width = width;
+    left_image_msg.width = width/2;
     // right_image_msg.frame_id = camera frame id;
     right_image_msg.height = height;
-    right_image_msg.width = width;
+    right_image_msg.width = width/2;
+    // stereo_image_msg.frame_id = camera frame id;
+    stereo_image_msg.height = height;
+    stereo_image_msg.width = width;
     // <---- Prepare Image messages
 
     // ----> Prepare Sensor messages
@@ -132,10 +132,8 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
 
     image_timer_ = this->create_wall_timer(20ms, std::bind(&StereoCameraPublisher::imageCallback, this), 
                                            callback_group);
-    #ifdef SENSOR_STREAM
     sensor_timer_ = this->create_wall_timer(2ms, std::bind(&StereoCameraPublisher::sensorCallback, this),
                                            callback_group);
-    #endif
 }
 
 void StereoCameraPublisher::imageCallback()
@@ -143,7 +141,7 @@ void StereoCameraPublisher::imageCallback()
     // ----> Get Video frame
     const sl_oc::video::Frame frame = videoCap->getLastFrame(10);
     // <---- Get Video frame
-
+    std::cout << this->now().nanoseconds() << std::endl;
     // If the frame is valid we can update it
     if(frame.data!=nullptr && frame.timestamp!=last_img_ts)
     {
@@ -170,15 +168,18 @@ void StereoCameraPublisher::imageCallback()
         // ----> Preparing image messages
         std_msgs::msg::Header header; // empty header
         // header.frame_id = frame_id;
-        header.stamp.nanosec = frame.timestamp;
+        header.stamp.sec = frame.timestamp / 1000000000;
+        header.stamp.nanosec = frame.timestamp % 1000000000;
 
         sensor_msgs::msg::Image left_img_msg = *cv_bridge::CvImage(header, "bgr8", left_image).toImageMsg();  
         sensor_msgs::msg::Image right_img_msg = *cv_bridge::CvImage(header, "bgr8", right_image).toImageMsg();  
+        sensor_msgs::msg::Image stereo_img_msg = *cv_bridge::CvImage(header, "bgr8", frameBGR).toImageMsg();  
         // <---- Preparing image messages
 
         // ----> Publishing image messages
         left_image_pub_->publish(left_img_msg);
         right_image_pub_->publish(right_img_msg);
+        stereo_image_pub_->publish(stereo_img_msg);
         // <---- Publishing image messages
     }
 }
@@ -197,10 +198,11 @@ void StereoCameraPublisher::sensorCallback()
         if(last_imu_ts!=0)
             RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(imuData.timestamp-last_imu_ts) << " Hz]");
         last_imu_ts = imuData.timestamp;
-        // ---- IMU Debug information
+        // <---- IMU Debug information
 
         // ----> Prepare IMU message
-        imu_msg.header.stamp.nanosec = imuData.timestamp;
+        imu_msg.header.stamp.sec = imuData.timestamp / 1000000000;
+        imu_msg.header.stamp.nanosec = imuData.timestamp % 1000000000;
         // for imu_msg.orientation.x/y/z/w maybe use http://wiki.ros.org/imu_filter_madgwick
         imu_msg.linear_acceleration.x = imuData.aX;
         imu_msg.linear_acceleration.y = imuData.aY;
@@ -230,7 +232,8 @@ void StereoCameraPublisher::sensorCallback()
         // ---- Magnetometer Debug information
 
         // ----> Prepare Magnetometer message
-        mag_msg.header.stamp.nanosec = magData.timestamp;
+        mag_msg.header.stamp.sec = magData.timestamp / 1000000000;
+        mag_msg.header.stamp.nanosec = magData.timestamp % 1000000000;
         mag_msg.magnetic_field.x = magData.mX;
         mag_msg.magnetic_field.y = magData.mY;
         mag_msg.magnetic_field.z = magData.mZ;
@@ -256,10 +259,21 @@ void StereoCameraPublisher::sensorCallback()
         // ---- Environment data Debug information
 
         // ----> Prepare Environment data messages
+        int sec = envData.timestamp / 1000000000;
+        int nsec = envData.timestamp % 1000000000;
+
+        press_msg.header.stamp.sec = sec;
+        press_msg.header.stamp.nanosec = nsec;
         press_msg.header.stamp.nanosec = envData.timestamp;
         press_msg.fluid_pressure = envData.press;
+
+        temp_msg.header.stamp.sec = sec;
+        temp_msg.header.stamp.nanosec = nsec;
         temp_msg.header.stamp.nanosec = envData.timestamp;
         temp_msg.temperature = envData.temp;
+
+        humi_msg.header.stamp.sec = sec;
+        humi_msg.header.stamp.nanosec = nsec;
         humi_msg.header.stamp.nanosec = envData.timestamp;
         humi_msg.relative_humidity = envData.humid;
         // <---- Prepare Environment data messages
@@ -286,9 +300,15 @@ void StereoCameraPublisher::sensorCallback()
         // ---- Camera Temperature Debug information
 
         // ----> Prepare Camera Temperature message
-        left_cam_temp_msg.header.stamp.nanosec = tempData.timestamp;
+        int sec = tempData.timestamp / 1000000000;
+        int nsec = tempData.timestamp % 1000000000;
+
+        left_cam_temp_msg.header.stamp.sec = sec;
+        left_cam_temp_msg.header.stamp.nanosec = nsec;
         left_cam_temp_msg.temperature = tempData.temp_left;
-        right_cam_temp_msg.header.stamp.nanosec = tempData.timestamp;
+
+        right_cam_temp_msg.header.stamp.sec = sec;
+        right_cam_temp_msg.header.stamp.nanosec = nsec;
         right_cam_temp_msg.temperature = tempData.temp_right;
         // <---- Prepare Camera Temperature message
 

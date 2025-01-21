@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
+import cv2
 import numpy as np
+from cv_bridge import CvBridge
 
 import rclpy
 from rclpy.node import Node
@@ -8,7 +10,6 @@ from sensor_msgs.msg import Image, Temperature
 
 from ilumo_interfaces.msg import ThermalImage
 
-from senxor.mi48 import format_header, format_framestats
 from senxor.utils import data_to_frame, connect_senxor, remap
 
 class ThermalCameraPublisher(Node):
@@ -22,7 +23,7 @@ class ThermalCameraPublisher(Node):
         # both control and data interface.
         # 'src=0' should refer to the first usb device with 
         # vendor ID 1046 and product ID 45058 or 45088
-        self.mi48, connected_port, _ = connect_senxor(src=0)
+        self.mi48, connected_port, _ = connect_senxor()
 
         if self.mi48 is None:
             self.get_logger().error('Connection to thermal camera failed.')
@@ -33,6 +34,7 @@ class ThermalCameraPublisher(Node):
         # print out camera infoSensorCapture
         STREAM_FPS = 25
         self.mi48.set_fps(STREAM_FPS)
+        self.last_img_ts = 0
 
         # see if filtering is available in MI48 and set it up
         self.mi48.disable_filter(f1=True, f2=True, f3=True)
@@ -59,8 +61,8 @@ class ThermalCameraPublisher(Node):
         # self.img_msg.header.frame_id =
         self.img_msg.height = 62
         self.img_msg.width = 80 
-        self.img_msg.step = 80
-        self.img_msg.encoding = 'mono8'
+        self.img_msg.step = 80 * 3
+        self.img_msg.encoding = 'bgr8'
 
         # Prepare temperature message
         self.temp_msg = Temperature()
@@ -69,27 +71,33 @@ class ThermalCameraPublisher(Node):
 
     def thermalcameraCallback(self):
         data, header = self.mi48.read()
+        timestamp = self.get_clock().now()
+
+        self.get_logger().info(f"Thermal timestamp: {timestamp.nanoseconds/1e9}")
+        if self.last_img_ts!=0:
+            self.get_logger().info(f" [{1e9/(timestamp.nanoseconds-self.last_img_ts)} Hz]")
+
+        self.last_img_ts = timestamp.nanoseconds
 
         if data is None:
             self.get_logger().error('Thermal camera received NONE data instead of GFRA')
             return
 
-        # 
-        if header is not None:
-            self.get_logger().debug('  '.join([format_header(header), format_framestats(data)]))
-        else:
-            self.get_logger().debug(format_framestats(data))
-
         frame = np.flip(data_to_frame(data, (80,62), hflip=False), 1)
 
-        self.data_msg.data = frame.astype(np.float32).flatten().tolist()
-        self.img_msg.data = remap(frame).flatten().tolist()
+        heatmap = cv2.applyColorMap(remap(frame), cv2.COLORMAP_JET)
 
-        #self.data_msg.header.stamp = header['timestamp']
-        #self.img_msg.header.stamp = header['timestamp']
+        bridge = CvBridge()
+        cv_image = bridge.cv2_to_imgmsg(heatmap, encoding='bgr8')
+
+        self.data_msg.data = frame.astype(np.float32).flatten().tolist()
+        self.img_msg.data = cv_image.data
+
+        self.data_msg.header.stamp = timestamp.to_msg()
+        self.img_msg.header.stamp = timestamp.to_msg()
 
         self.temp_msg.temperature = header['senxor_temperature']
-        #self.temp_msg.header.stamp = header['timestamp']
+        self.temp_msg.header.stamp = timestamp.to_msg()
 
         self.data_pub_.publish(self.data_msg)
         self.img_pub_.publish(self.img_msg)
