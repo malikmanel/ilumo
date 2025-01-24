@@ -34,9 +34,6 @@ private:
     rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr left_camera_temperature_pub_;
     rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr right_camera_temperature_pub_;
 
-    sensor_msgs::msg::Image left_image_msg;
-    sensor_msgs::msg::Image right_image_msg;
-    sensor_msgs::msg::Image stereo_image_msg;
     sensor_msgs::msg::Imu imu_msg;
     sensor_msgs::msg::MagneticField mag_msg;
     sensor_msgs::msg::FluidPressure press_msg;

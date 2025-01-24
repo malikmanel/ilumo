@@ -50,7 +50,7 @@ class ThermalCameraPublisher(Node):
 
         # Prepare data message
         self.data_msg = ThermalImage()
-        # self.img_msg.header.frame_id =
+        self.img_msg.header.frame_id = 'thermal_camera'
         self.data_msg.height = 62
         self.data_msg.width = 80 
         self.data_msg.step = 80*4
@@ -58,7 +58,7 @@ class ThermalCameraPublisher(Node):
 
         # Prepare image message
         self.img_msg = Image()
-        # self.img_msg.header.frame_id =
+        self.img_msg.header.frame_id = 'thermal_camera'
         self.img_msg.height = 62
         self.img_msg.width = 80 
         self.img_msg.step = 80 * 3

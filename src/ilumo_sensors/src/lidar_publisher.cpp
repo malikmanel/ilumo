@@ -103,15 +103,15 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     bottom_avg_imu_msg = sensor_msgs::msg::Imu();
     bottom_temp_msg = sensor_msgs::msg::Temperature();
 
-    // side_point_cloud_msg->header.frame_id = 
-    // side_imu_burst_msg.frame_id = 
-    // side_avg_imu_msg.header.frame_id = 
-    // side_temp_msg.header.frame_id =
+    side_point_cloud_msg->header.frame_id = "lidar_side";
+    side_imu_burst_msg.frame_id = "lidar_side";
+    side_avg_imu_msg.header.frame_id = "lidar_side";
+    side_temp_msg.header.frame_id ="lidar_side";
 
-    // bottom_point_cloud_msg->header.frame_id = 
-    // bottom_imu_burst_msg.frame_id = 
-    // bottom_avg_imu_msg.header.frame_id = 
-    // bottom_temp_msg.header.frame_id =
+    bottom_point_cloud_msg->header.frame_id = "lidar_bottom";
+    bottom_imu_burst_msg.frame_id = "lidar_bottom";
+    bottom_avg_imu_msg.header.frame_id = "lidar_bottom";
+    bottom_temp_msg.header.frame_id ="lidar_bottom";
     // <---- Prepare LiDAR messages
 
     // ----> Initialize publishers
@@ -186,7 +186,6 @@ void LiDARPublisher::pointcloudCallback(std::shared_ptr<blickfeld::scanner::poin
     point_cloud_msg->data.resize(number_of_points * point_cloud_msg->point_step);
 
     /// set point cloud message data
-    // point_cloud_msg->header.frame_id = frame_id
     point_cloud_msg->header.stamp.sec = frame.start_time_ns() / 1000000000;
     point_cloud_msg->header.stamp.nanosec = frame.start_time_ns() % 1000000000;
     point_cloud_msg->is_dense = false;

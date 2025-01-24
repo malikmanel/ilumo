@@ -81,26 +81,6 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     // <---- Enable video/sensors synchronization
     #endif
 
-    // ----> Prepare Image messages
-    left_image_msg = sensor_msgs::msg::Image();
-    right_image_msg = sensor_msgs::msg::Image();
-    stereo_image_msg = sensor_msgs::msg::Image();
-
-    // ---> Get frame size
-    videoCap->getFrameSize(width, height);
-    // <--- Get frame size
-
-    // left_image_msg.frame_id = camera frame id;
-    left_image_msg.height = height;
-    left_image_msg.width = width/2;
-    // right_image_msg.frame_id = camera frame id;
-    right_image_msg.height = height;
-    right_image_msg.width = width/2;
-    // stereo_image_msg.frame_id = camera frame id;
-    stereo_image_msg.height = height;
-    stereo_image_msg.width = width;
-    // <---- Prepare Image messages
-
     // ----> Prepare Sensor messages
     imu_msg = sensor_msgs::msg::Imu();
     mag_msg = sensor_msgs::msg::MagneticField();
@@ -110,13 +90,13 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     left_cam_temp_msg = sensor_msgs::msg::Temperature();
     right_cam_temp_msg = sensor_msgs::msg::Temperature();
 
-    // imu_msg.header.frame_id = ...;
-    // mag_msg.header.frame_id = ...;
-    // press_msg.header.frame_id = ...;
-    // temp_msg.header.frame_id = ...;
-    // humi_msg.header.frame_id = ...;
-    // left_cam_temp_msg.header.frame_id = ...;
-    // right_cam_temp_msg.header.frame_id = ...;
+    imu_msg.header.frame_id = "stereo_camera_center";
+    mag_msg.header.frame_id = "stereo_camera_center";
+    press_msg.header.frame_id = "stereo_camera_center";
+    temp_msg.header.frame_id = "stereo_camera_center";
+    humi_msg.header.frame_id = "stereo_camera_center";
+    left_cam_temp_msg.header.frame_id = "stereo_camera_bottom";
+    right_cam_temp_msg.header.frame_id = "stereo_camera_top";
     // <---- Prepare Sensor messages
 
     // Previous timestamps to calculate frequency
@@ -161,19 +141,30 @@ void StereoCameraPublisher::imageCallback()
         // <---- Conversion from YUV 4:2:2 to BGR for visualization
 
         // ----> Split image
-        cv::Mat left_image = frameBGR(cv::Rect(0, 0, left_image_msg.width, frame.height)).clone();
-        cv::Mat right_image = frameBGR(cv::Rect(left_image_msg.width, 0, right_image_msg.width, frame.height)).clone();
+        cv::Mat left_image = frameBGR(cv::Rect(0, 0, frame.width/2, frame.height)).clone();
+        cv::Mat right_image = frameBGR(cv::Rect(frame.width/2, 0, frame.width/2, frame.height)).clone();
         // <---- Split image
 
         // ----> Preparing image messages
-        std_msgs::msg::Header header; // empty header
-        // header.frame_id = frame_id;
-        header.stamp.sec = frame.timestamp / 1000000000;
-        header.stamp.nanosec = frame.timestamp % 1000000000;
+        std_msgs::msg::Header left_img_header;
+        std_msgs::msg::Header right_img_header;
+        std_msgs::msg::Header stereo_img_header;
 
-        sensor_msgs::msg::Image left_img_msg = *cv_bridge::CvImage(header, "bgr8", left_image).toImageMsg();  
-        sensor_msgs::msg::Image right_img_msg = *cv_bridge::CvImage(header, "bgr8", right_image).toImageMsg();  
-        sensor_msgs::msg::Image stereo_img_msg = *cv_bridge::CvImage(header, "bgr8", frameBGR).toImageMsg();  
+        left_img_header.frame_id = "stereo_camera_bottom";
+        left_img_header.stamp.sec = frame.timestamp / 1000000000;
+        left_img_header.stamp.nanosec = frame.timestamp % 1000000000;
+
+        right_img_header.frame_id = "stereo_camera_top";
+        right_img_header.stamp.sec = frame.timestamp / 1000000000;
+        right_img_header.stamp.nanosec = frame.timestamp % 1000000000;
+
+        stereo_img_header.frame_id = "stereo_camera_center";
+        stereo_img_header.stamp.sec = frame.timestamp / 1000000000;
+        stereo_img_header.stamp.nanosec = frame.timestamp % 1000000000;
+
+        sensor_msgs::msg::Image left_img_msg = *cv_bridge::CvImage(left_img_header, "bgr8", left_image).toImageMsg();  
+        sensor_msgs::msg::Image right_img_msg = *cv_bridge::CvImage(right_img_header, "bgr8", right_image).toImageMsg();  
+        sensor_msgs::msg::Image stereo_img_msg = *cv_bridge::CvImage(stereo_img_header, "bgr8", frameBGR).toImageMsg();  
         // <---- Preparing image messages
 
         // ----> Publishing image messages
