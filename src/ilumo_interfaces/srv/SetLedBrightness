@@ -1,0 +1,5 @@
+# Request
+int64 brightness
+---
+# Response
+bool success
