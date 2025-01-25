@@ -20,8 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'motor_controller = ilumo_control.motor_controller:main',
-            'led_controller = ilumo_control.led_controller:main'
+            'pwm_controller = ilumo_control.pwm_controller:main'
         ],
     },
 )
