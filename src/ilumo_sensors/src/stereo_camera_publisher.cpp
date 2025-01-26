@@ -28,6 +28,45 @@ uint64_t mcu_sync_ts=0;
 
 StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(name)
 {
+    // ----> Declare the parameters
+    // Stereo camera resolution
+    auto resolution_param_desc = rcl_interfaces::msg::ParameterDescriptor{};
+    resolution_param_desc.name = "Resolution";
+    resolution_param_desc.type = 2; // Integer
+    resolution_param_desc.description = "Resolution of the stereo camera. 0 = VGA, 1 = HD720, 2 = HD1080, 3 = HD2K";
+    resolution_param_desc.read_only = true;
+    resolution_param_desc.integer_range = {rcl_interfaces::msg::IntegerRange()
+                                           .set__from_value(0)
+                                           .set__to_value(3)
+                                           .set__step(1)};
+
+    // Stereo camera FPS
+    auto fps_param_desc = rcl_interfaces::msg::ParameterDescriptor{};
+    fps_param_desc.name = "Framerate";
+    fps_param_desc.type = 2; // Integer
+    fps_param_desc.description = "Framerate of the stereo camera. 0 = 15fps, 1 = 30fps, 2 = 60fps, 3 = 100fps";
+    fps_param_desc.read_only = true;
+    fps_param_desc.integer_range = {rcl_interfaces::msg::IntegerRange()
+                                    .set__from_value(0)
+                                    .set__to_value(3)
+                                    .set__step(1)};
+
+    // Stereo camera node logging verbosity
+    auto logging_param_desc = rcl_interfaces::msg::ParameterDescriptor{};
+    logging_param_desc.name = "Verbosity";
+    logging_param_desc.type = 2; // Integer
+    logging_param_desc.description = "Logging verbosity of the stereo camera node. 0 = None, 1 = Error, 2 = Warning, 3 = Info";
+    logging_param_desc.read_only = true;
+    logging_param_desc.integer_range = {rcl_interfaces::msg::IntegerRange()
+                                        .set__from_value(0)
+                                        .set__to_value(3)
+                                        .set__step(1)};
+
+    this->declare_parameter("stereo_camera_resolution", 1, resolution_param_desc);
+    this->declare_parameter("stereo_camera_fps", 1, fps_param_desc);
+    this->declare_parameter("stereo_camera_verbosity", 2, logging_param_desc);
+    // <---- Declare the parameters
+
     // ----> Create the publishers
     left_image_pub_ = this->create_publisher<sensor_msgs::msg::Image>("stereo_camera/left_camera/image", 10);
     right_image_pub_ = this->create_publisher<sensor_msgs::msg::Image>("stereo_camera/right_camera/image", 10);
@@ -41,15 +80,59 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     right_camera_temperature_pub_ = this->create_publisher<sensor_msgs::msg::Temperature>("stereo_camera/right_camera/temperature", 10);
     // <---- Create the publishers
 
-    // Set the verbose level
-    sl_oc::VERBOSITY verbose = sl_oc::VERBOSITY::INFO;
-
     // ----> Set the video parameters
     sl_oc::video::VideoParams params;
-    params.res = sl_oc::video::RESOLUTION::HD720;
-    params.fps = sl_oc::video::FPS::FPS_30;
+    int resolution_param = this->get_parameter("stereo_camera_resolution").as_int();
+    int fps_param = this->get_parameter("stereo_camera_fps").as_int();
+    int verbose_param = this->get_parameter("stereo_camera_verbosity").as_int();
+
+    sl_oc::VERBOSITY verbose;
+    switch (verbose_param) {
+        case 0: {verbose = sl_oc::VERBOSITY::NONE;}
+            break;
+        case 1: {verbose = sl_oc::VERBOSITY::ERROR;}
+            break;
+        case 2: {verbose = sl_oc::VERBOSITY::WARNING;}
+            break;
+        case 3: {verbose = sl_oc::VERBOSITY::INFO;}
+            break;
+    }
     params.verbose = verbose;
-    // <---- Video parameters
+
+    switch (resolution_param) {
+        case 0: {params.res = sl_oc::video::RESOLUTION::VGA;}
+            break;
+        case 1: {params.res = sl_oc::video::RESOLUTION::HD720;
+            if (fps_param > 2) {
+                fps_param = 2;
+                RCLCPP_WARN_STREAM(get_logger(), "Selected framerate not available at HD720. Throttling to 60fps.");
+            }
+        }break;
+        case 2: {params.res = sl_oc::video::RESOLUTION::HD1080;
+            if (fps_param > 1) {
+                fps_param = 1;
+                RCLCPP_WARN_STREAM(get_logger(), "Selected framerate not available at HD1080. Throttling to 30fps.");
+            }
+        }break;
+        case 3: {params.res = sl_oc::video::RESOLUTION::HD2K;
+            if (fps_param > 0) {
+                fps_param = 1;
+                RCLCPP_WARN_STREAM(get_logger(), "Selected framerate not available at HD2K. Throttling to 15fps.");
+            }
+        }break;
+    }
+
+    switch (fps_param) {
+        case 0: {params.fps = sl_oc::video::FPS::FPS_15;}
+            break;
+        case 1: {params.fps = sl_oc::video::FPS::FPS_30;}
+            break;
+        case 2: {params.fps = sl_oc::video::FPS::FPS_60;}
+            break;
+        case 3: {params.fps = sl_oc::video::FPS::FPS_100;}
+            break;
+    }
+    // <---- Set the video parameters
 
     // ----> Create a Video Capture object
     videoCap = std::make_shared<sl_oc::video::VideoCapture>(params);
@@ -114,6 +197,8 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
                                            callback_group);
     sensor_timer_ = this->create_wall_timer(2ms, std::bind(&StereoCameraPublisher::sensorCallback, this),
                                            callback_group);
+
+    RCLCPP_INFO_STREAM(get_logger(), "Stereo camera setup successful. Streaming Data ...");
 }
 
 void StereoCameraPublisher::imageCallback()
@@ -129,9 +214,9 @@ void StereoCameraPublisher::imageCallback()
         last_img_ts = frame.timestamp;
 
         // ----> Video Debug information
-        RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(9) << "Video timestamp: " << static_cast<double>(last_img_ts)/1e9<< " sec");
+        RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(9) << "Video timestamp: " << static_cast<double>(last_img_ts)/1e9<< " sec");
         if( last_img_ts!=0 )
-            RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << frame_fps << " Hz]");
+            RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << frame_fps << " Hz]");
         // <---- Video Debug information
 
         // ----> Conversion from YUV 4:2:2 to BGR for visualization
@@ -185,9 +270,9 @@ void StereoCameraPublisher::sensorCallback()
     if(imuData.valid == sl_oc::sensors::data::Imu::NEW_VAL ) // Uncomment to use only data syncronized with the video frames
     {
         // ----> IMU Debug information
-        RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(9) << "IMU timestamp:   " << static_cast<double>(imuData.timestamp)/1e9<< " sec" );
+        RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(9) << "IMU timestamp:   " << static_cast<double>(imuData.timestamp)/1e9<< " sec" );
         if(last_imu_ts!=0)
-            RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(imuData.timestamp-last_imu_ts) << " Hz]");
+            RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(imuData.timestamp-last_imu_ts) << " Hz]");
         last_imu_ts = imuData.timestamp;
         // <---- IMU Debug information
 
@@ -216,9 +301,9 @@ void StereoCameraPublisher::sensorCallback()
     if( magData.valid == sl_oc::sensors::data::Magnetometer::NEW_VAL )
     {
         // ----> Magnetometer Debug information
-        RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(9) << "Magnetometer timestamp: " << static_cast<double>(magData.timestamp)/1e9<< " sec" );
+        RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(9) << "Magnetometer timestamp: " << static_cast<double>(magData.timestamp)/1e9<< " sec" );
         if(last_mag_ts!=0)
-            RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(magData.timestamp-last_mag_ts) << " Hz]");
+            RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(magData.timestamp-last_mag_ts) << " Hz]");
         last_mag_ts = magData.timestamp;
         // ---- Magnetometer Debug information
 
@@ -243,9 +328,9 @@ void StereoCameraPublisher::sensorCallback()
     if( envData.valid == sl_oc::sensors::data::Environment::NEW_VAL )
     {
         // ----> Environment data Debug information
-        RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(9) << "Environment data timestamp: " << static_cast<double>(envData.timestamp)/1e9<< " sec" );
+        RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(9) << "Environment data timestamp: " << static_cast<double>(envData.timestamp)/1e9<< " sec" );
         if(last_env_ts!=0)
-            RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(envData.timestamp-last_env_ts) << " Hz]");
+            RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(envData.timestamp-last_env_ts) << " Hz]");
         last_env_ts = envData.timestamp;
         // ---- Environment data Debug information
 
@@ -284,9 +369,9 @@ void StereoCameraPublisher::sensorCallback()
     if( tempData.valid == sl_oc::sensors::data::Temperature::NEW_VAL )
     {
         // ----> Camera Temperature Debug information
-        RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(9) << "Camera Temperature timestamp: " << static_cast<double>(tempData.timestamp)/1e9<< " sec" );
+        RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(9) << "Camera Temperature timestamp: " << static_cast<double>(tempData.timestamp)/1e9<< " sec" );
         if(last_cam_temp_ts!=0)
-            RCLCPP_INFO_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(tempData.timestamp-last_cam_temp_ts) << " Hz]");
+            RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(tempData.timestamp-last_cam_temp_ts) << " Hz]");
         last_cam_temp_ts = tempData.timestamp;
         // ---- Camera Temperature Debug information
 
