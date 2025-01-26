@@ -32,8 +32,8 @@ class ThermalCameraPublisher(Node):
         self.get_logger().info(f'Connected to thermal camera at port {connected_port}.')
 
         # print out camera infoSensorCapture
-        STREAM_FPS = 25
-        self.mi48.set_fps(STREAM_FPS)
+        stream_fps = 25
+        self.mi48.set_fps(stream_fps)
         self.last_img_ts = 0
 
         # see if filtering is available in MI48 and set it up
@@ -50,7 +50,7 @@ class ThermalCameraPublisher(Node):
 
         # Prepare data message
         self.data_msg = ThermalImage()
-        self.img_msg.header.frame_id = 'thermal_camera'
+        self.data_msg.header.frame_id = 'thermal_camera'
         self.data_msg.height = 62
         self.data_msg.width = 80 
         self.data_msg.step = 80*4
@@ -83,7 +83,7 @@ class ThermalCameraPublisher(Node):
             self.get_logger().error('Thermal camera received NONE data instead of GFRA')
             return
 
-        frame = np.flip(data_to_frame(data, (80,62), hflip=False), 1)
+        frame = np.flip(data_to_frame(data, (80,62), hflip=False), 0)
 
         heatmap = cv2.applyColorMap(remap(frame), cv2.COLORMAP_JET)
 
