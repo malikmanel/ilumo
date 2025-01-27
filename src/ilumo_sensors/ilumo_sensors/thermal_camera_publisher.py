@@ -7,6 +7,7 @@ from cv_bridge import CvBridge
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, Temperature
+from rcl_interfaces.msg import ParameterDescriptor, IntegerRange, FloatingPointRange
 
 from ilumo_interfaces.msg import ThermalImage
 
@@ -15,6 +16,27 @@ from senxor.utils import data_to_frame, connect_senxor, remap
 class ThermalCameraPublisher(Node):
     def __init__(self):
         super().__init__("thermal_camera_publisher")
+
+        fps_param_descriptor = ParameterDescriptor(name = "Framerate",
+                                                   type = 2, # Integer
+                                                   description = 'This parameter is mine!', 
+                                                   integer_range = IntegerRange(from_value = 1,
+                                                                                to_value = 25))
+        
+        updown_param_descriptor = ParameterDescriptor(name = "Upside Down",
+                                                      type = 1, # Bool
+                                                      description = 'Enable if thermal camera is upside down (USB port is up).')
+        
+        logging_param_desc = ParameterDescriptor(name = "Verbosity",
+                                                 type = 2, # Integer
+                                                 description = 'Logging verbosity of the thermal camera node. 0 = None, 1 = Error, 2 = Warning, 3 = Info', 
+                                                 integer_range = IntegerRange(from_value = 0,
+                                                                              to_value = 3))
+
+        self.declare_parameter('thermal_camera_fps', 15, fps_param_descriptor)
+        self.declare_parameter('thermal_camera_updown', True, updown_param_descriptor)
+        self.declare_parameter('thermal_camera_verbosity', 2, logging_param_desc)
+
         self.data_pub_ = self.create_publisher(ThermalImage, "thermal_camera/thermal_data", 10)
         self.img_pub_ = self.create_publisher(Image, "thermal_camera/image", 10)
         self.temp_pub_ = self.create_publisher(Temperature, "thermal_camera/sensor_temperature", 10)
@@ -31,8 +53,8 @@ class ThermalCameraPublisher(Node):
 
         self.get_logger().info(f'Connected to thermal camera at port {connected_port}.')
 
-        # print out camera infoSensorCapture
-        stream_fps = 25
+        # Set thermal camera parameters
+        stream_fps = self.get_parameter('thermal_camera_fps').get_parameter_value().integer_value
         self.mi48.set_fps(stream_fps)
         self.last_img_ts = 0
 
@@ -83,7 +105,12 @@ class ThermalCameraPublisher(Node):
             self.get_logger().error('Thermal camera received NONE data instead of GFRA')
             return
 
-        frame = np.flip(data_to_frame(data, (80,62), hflip=False), 0)
+        updown = self.get_parameter('thermal_camera_updown').get_parameter_value().bool_value
+
+        if updown:
+            frame = np.flip(data_to_frame(data, (80,62), hflip=False), 0)
+        else:
+            frame = data_to_frame(data, (80,62), hflip=True)
 
         heatmap = cv2.applyColorMap(remap(frame), cv2.COLORMAP_JET)
 
