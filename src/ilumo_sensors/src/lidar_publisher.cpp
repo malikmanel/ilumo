@@ -70,7 +70,7 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     auto hori_fov_param_desc = rcl_interfaces::msg::ParameterDescriptor{};
     hori_fov_param_desc.name = "Horizontal FoV";
     hori_fov_param_desc.type = 3; // Double
-    hori_fov_param_desc.description = "Horizontal field of view in deg.";
+    hori_fov_param_desc.description = "Horizontal field of view in deg. (default=70)";
     hori_fov_param_desc.floating_point_range = {rcl_interfaces::msg::FloatingPointRange()
                                                 .set__from_value(10.0)
                                                 .set__to_value(70.0)};
@@ -79,7 +79,7 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     auto vert_fov_desc = rcl_interfaces::msg::ParameterDescriptor{};
     vert_fov_desc.name = "Vertical FoV";
     vert_fov_desc.type = 3; // Double
-    vert_fov_desc.description = "Vertical field of view in deg.";
+    vert_fov_desc.description = "Vertical field of view in deg. (default=20)";
     vert_fov_desc.floating_point_range = {rcl_interfaces::msg::FloatingPointRange()
                                           .set__from_value(5.0)
                                           .set__to_value(30.0)};
@@ -88,7 +88,7 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     auto pulse_space_desc = rcl_interfaces::msg::ParameterDescriptor{};
     pulse_space_desc.name = "Pulse Angle Spacing";
     pulse_space_desc.type = 3; // Double
-    pulse_space_desc.description = "Horizontal pulse angle spacing in deg. Defines horizontal sample resolution.";
+    pulse_space_desc.description = "Horizontal pulse angle spacing in deg. Defines horizontal sample resolution. (default=0.4)";
     pulse_space_desc.floating_point_range = {rcl_interfaces::msg::FloatingPointRange()
                                              .set__from_value(0.4)
                                              .set__to_value(1.0)};
@@ -101,7 +101,7 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     auto scan_lines_param_desc = rcl_interfaces::msg::ParameterDescriptor{};
     scan_lines_param_desc.name = "Scan lines";
     scan_lines_param_desc.type = 2; // Integer
-    scan_lines_param_desc.description = "Vertical scan lines. More scan lines lead to a reduced frame rate.";
+    scan_lines_param_desc.description = "Vertical scan lines. More scan lines lead to a reduced frame rate. (default=350)";
     scan_lines_param_desc.integer_range = {rcl_interfaces::msg::IntegerRange()
                                            .set__from_value(5)
                                            .set__to_value(400)};
@@ -110,7 +110,7 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     auto logging_param_desc = rcl_interfaces::msg::ParameterDescriptor{};
     logging_param_desc.name = "Verbosity";
     logging_param_desc.type = 2; // Integer
-    logging_param_desc.description = "Logging verbosity of the LiDAR node. 0 = None, 1 = Error, 2 = Warning, 3 = Info";
+    logging_param_desc.description = "Logging verbosity of the LiDAR node. 0 = None, 1 = Error, 2 = Warning, 3 = Info (default=2)";
     logging_param_desc.integer_range = {rcl_interfaces::msg::IntegerRange()
                                         .set__from_value(0)
                                         .set__to_value(3)

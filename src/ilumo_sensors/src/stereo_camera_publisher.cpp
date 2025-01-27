@@ -33,7 +33,7 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     auto resolution_param_desc = rcl_interfaces::msg::ParameterDescriptor{};
     resolution_param_desc.name = "Resolution";
     resolution_param_desc.type = 2; // Integer
-    resolution_param_desc.description = "Resolution of the stereo camera. 0 = VGA, 1 = HD720, 2 = HD1080, 3 = HD2K";
+    resolution_param_desc.description = "Resolution of the stereo camera. 0 = VGA, 1 = HD720, 2 = HD1080, 3 = HD2K (default=1)";
     resolution_param_desc.integer_range = {rcl_interfaces::msg::IntegerRange()
                                            .set__from_value(0)
                                            .set__to_value(3)
@@ -43,7 +43,7 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     auto fps_param_desc = rcl_interfaces::msg::ParameterDescriptor{};
     fps_param_desc.name = "Framerate";
     fps_param_desc.type = 2; // Integer
-    fps_param_desc.description = "Framerate of the stereo camera. 0 = 15fps, 1 = 30fps, 2 = 60fps, 3 = 100fps";
+    fps_param_desc.description = "Framerate of the stereo camera. 0 = 15fps, 1 = 30fps, 2 = 60fps, 3 = 100fps (default=1)";
     fps_param_desc.integer_range = {rcl_interfaces::msg::IntegerRange()
                                     .set__from_value(0)
                                     .set__to_value(3)
@@ -53,7 +53,7 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     auto logging_param_desc = rcl_interfaces::msg::ParameterDescriptor{};
     logging_param_desc.name = "Verbosity";
     logging_param_desc.type = 2; // Integer
-    logging_param_desc.description = "Logging verbosity of the stereo camera node. 0 = None, 1 = Error, 2 = Warning, 3 = Info";
+    logging_param_desc.description = "Logging verbosity of the stereo camera node. 0 = None, 1 = Error, 2 = Warning, 3 = Info (default=2)";
     logging_param_desc.integer_range = {rcl_interfaces::msg::IntegerRange()
                                         .set__from_value(0)
                                         .set__to_value(3)

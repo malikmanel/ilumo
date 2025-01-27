@@ -7,7 +7,7 @@ from cv_bridge import CvBridge
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, Temperature
-from rcl_interfaces.msg import ParameterDescriptor, IntegerRange, FloatingPointRange
+from rcl_interfaces.msg import ParameterDescriptor, IntegerRange
 
 from ilumo_interfaces.msg import ThermalImage
 
@@ -19,17 +19,17 @@ class ThermalCameraPublisher(Node):
 
         fps_param_descriptor = ParameterDescriptor(name = "Framerate",
                                                    type = 2, # Integer
-                                                   description = 'This parameter is mine!', 
+                                                   description = 'Framerate of the thermal camera. (default=15)', 
                                                    integer_range = IntegerRange(from_value = 1,
                                                                                 to_value = 25))
         
         updown_param_descriptor = ParameterDescriptor(name = "Upside Down",
                                                       type = 1, # Bool
-                                                      description = 'Enable if thermal camera is upside down (USB port is up).')
+                                                      description = 'Enable if thermal camera is upside down (USB port is up). (default=True)')
         
         logging_param_desc = ParameterDescriptor(name = "Verbosity",
                                                  type = 2, # Integer
-                                                 description = 'Logging verbosity of the thermal camera node. 0 = None, 1 = Error, 2 = Warning, 3 = Info', 
+                                                 description = 'Logging verbosity of the thermal camera node. 0 = None, 1 = Error, 2 = Warning, 3 = Info (default=2)', 
                                                  integer_range = IntegerRange(from_value = 0,
                                                                               to_value = 3))
 
@@ -89,6 +89,7 @@ class ThermalCameraPublisher(Node):
         # Prepare temperature message
         self.temp_msg = Temperature()
         
+        # Create callback timer
         self.timer_ = self.create_timer(0.04, self.thermalcameraCallback)
 
     def thermalcameraCallback(self):
