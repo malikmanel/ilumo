@@ -1,5 +1,6 @@
 // ----> Includes
 #include <chrono>
+#include <math.h>
 #include "ilumo_interfaces/msg/imu_single.hpp"
 
 #include "ilumo_sensors/lidar_publisher.hpp"
@@ -65,67 +66,61 @@ sensor_msgs::msg::PointCloud2::SharedPtr makePointCloudMessage()
 LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
 {
     // ----> Declare the parameters
-    // Stereo camera resolution
+    // LiDAR horizontal FoV
     auto hori_fov_param_desc = rcl_interfaces::msg::ParameterDescriptor{};
     hori_fov_param_desc.name = "Horizontal FoV";
-    hori_fov_param_desc.type = 2; // Integer
-    hori_fov_param_desc.description = "Resolution of the stereo camera. 0 = VGA, 1 = HD720, 2 = HD1080, 3 = HD2K";
-    hori_fov_param_desc.read_only = true;
-    hori_fov_param_desc.integer_range = {rcl_interfaces::msg::IntegerRange()
-                                           .set__from_value(0)
-                                           .set__to_value(3)
-                                           .set__step(1)};
+    hori_fov_param_desc.type = 3; // Double
+    hori_fov_param_desc.description = "Horizontal field of view in deg.";
+    hori_fov_param_desc.floating_point_range = {rcl_interfaces::msg::FloatingPointRange()
+                                                .set__from_value(10.0)
+                                                .set__to_value(70.0)};
 
-    // Stereo camera FPS
+    // LiDAR vertical FoV
     auto vert_fov_desc = rcl_interfaces::msg::ParameterDescriptor{};
     vert_fov_desc.name = "Vertical FoV";
-    vert_fov_desc.type = 2; // Integer
-    vert_fov_desc.description = "Frames per second of the stereo camera. 0 = 15fps, 1 = 30fps, 2 = 60fps, 3 = 100fps";
-    vert_fov_desc.read_only = true;
-    vert_fov_desc.integer_range = {rcl_interfaces::msg::IntegerRange()
-                                    .set__from_value(0)
-                                    .set__to_value(3)
-                                    .set__step(1)};
+    vert_fov_desc.type = 3; // Double
+    vert_fov_desc.description = "Vertical field of view in deg.";
+    vert_fov_desc.floating_point_range = {rcl_interfaces::msg::FloatingPointRange()
+                                          .set__from_value(5.0)
+                                          .set__to_value(30.0)};
 
-    // Stereo camera node logging
+    // LiDAR horizontal pulse angle spacing
     auto pulse_space_desc = rcl_interfaces::msg::ParameterDescriptor{};
     pulse_space_desc.name = "Pulse Angle Spacing";
-    pulse_space_desc.type = 2; // Integer
-    pulse_space_desc.description = "Logging verbosity of the stereo camera node. 0 = None, 1 = Error, 2 = Warning, 3 = Info";
-    pulse_space_desc.read_only = true;
-    pulse_space_desc.integer_range = {rcl_interfaces::msg::IntegerRange()
-                                        .set__from_value(0)
-                                        .set__to_value(3)
-                                        .set__step(1)};
+    pulse_space_desc.type = 3; // Double
+    pulse_space_desc.description = "Horizontal pulse angle spacing in deg. Defines horizontal sample resolution.";
+    pulse_space_desc.floating_point_range = {rcl_interfaces::msg::FloatingPointRange()
+                                             .set__from_value(0.4)
+                                             .set__to_value(1.0)};
 
-    // Stereo camera node logging verbosity
-    auto fps_param_desc = rcl_interfaces::msg::ParameterDescriptor{};
-    fps_param_desc.name = "Framerate";
-    fps_param_desc.type = 2; // Integer
-    fps_param_desc.description = "Logging verbosity of the stereo camera node. 0 = None, 1 = Error, 2 = Warning, 3 = Info";
-    fps_param_desc.read_only = true;
-    fps_param_desc.integer_range = {rcl_interfaces::msg::IntegerRange()
-                                        .set__from_value(0)
-                                        .set__to_value(3)
-                                        .set__step(1)};
+    // LiDAR vertical scan lines
+    // Frame rate is supposedly equal to 2 * (natural mirror frequency)/(scan lines). 
+    // From their example that suggests a natural frequency of 250Hz.
+    // This would make 400 vertical scan  lines impossible.
+    // Solution: Set scan lines, let blickfeld figure out the Hz.
+    auto scan_lines_param_desc = rcl_interfaces::msg::ParameterDescriptor{};
+    scan_lines_param_desc.name = "Scan lines";
+    scan_lines_param_desc.type = 2; // Integer
+    scan_lines_param_desc.description = "Vertical scan lines. More scan lines lead to a reduced frame rate.";
+    scan_lines_param_desc.integer_range = {rcl_interfaces::msg::IntegerRange()
+                                           .set__from_value(5)
+                                           .set__to_value(400)};
 
     // Stereo camera node logging
     auto logging_param_desc = rcl_interfaces::msg::ParameterDescriptor{};
     logging_param_desc.name = "Verbosity";
     logging_param_desc.type = 2; // Integer
     logging_param_desc.description = "Logging verbosity of the LiDAR node. 0 = None, 1 = Error, 2 = Warning, 3 = Info";
-    logging_param_desc.read_only = true;
     logging_param_desc.integer_range = {rcl_interfaces::msg::IntegerRange()
                                         .set__from_value(0)
                                         .set__to_value(3)
                                         .set__step(1)};
 
-    this->declare_parameter("lidar_horizontal_fov", 1, hori_fov_param_desc);
-    this->declare_parameter("lidar_vertical_fov", 1, vert_fov_desc);
-    this->declare_parameter("lidar_pulse_angle_space", 2, pulse_space_desc);
-    this->declare_parameter("lidar_framerate", 2, fps_param_desc);
+    this->declare_parameter("lidar_horizontal_fov", 70.0, hori_fov_param_desc);
+    this->declare_parameter("lidar_vertical_fov", 20.0, vert_fov_desc);
+    this->declare_parameter("lidar_pulse_angle_space", 0.4, pulse_space_desc);
+    this->declare_parameter("lidar_scan_lines", 350, scan_lines_param_desc);
     this->declare_parameter("lidar_verbosity", 2, logging_param_desc);
-    // <---- Declare the parameters
     // <---- Declare the parameters
 
     // ----> Create the publishers
@@ -149,6 +144,29 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     RCLCPP_INFO_STREAM(get_logger(),"Connected to the Blickfeld sensor at address " << side_scanner_ip_or_host);
     RCLCPP_INFO_STREAM(get_logger(),"Connected to the Blickfeld sensor at address " << bottom_scanner_ip_or_host);
     // <---- Creating a connection to the device.
+
+    // ----> Set scanner parameters
+    blickfeld::protocol::config::ScanPattern scan_pattern;
+
+    double hori_fov = this->get_parameter("lidar_horizontal_fov").as_double();
+    double vert_fov = this->get_parameter("lidar_vertical_fov").as_double();
+    double angle_space = this->get_parameter("lidar_pulse_angle_space").as_double();
+    int scan_lines = this->get_parameter("lidar_scan_lines").as_int();
+    int verbose_param = this->get_parameter("lidar_verbosity").as_int();
+
+    int scan_lines_down = scan_lines / 2;
+    int scan_lines_up = scan_lines - scan_lines_down;
+
+    scan_pattern.mutable_horizontal()->set_fov(hori_fov * (M_PI / 180.0));
+	scan_pattern.mutable_vertical()->set_fov(vert_fov * (M_PI / 180.0));
+	scan_pattern.mutable_vertical()->set_scanlines_up(scan_lines_up); // Upramping phase (increase of vertical mirror movement to reach outer scanlines)
+	scan_pattern.mutable_vertical()->set_scanlines_down(scan_lines_down); // Upramping phase (decrease of vertical mirror movement to return to inner scanlines)
+    scan_pattern.mutable_pulse()->set_angle_spacing(angle_space * (M_PI / 180.0));
+
+	scan_pattern = side_scanner->fill_scan_pattern(scan_pattern);
+	side_scanner->set_scan_pattern(scan_pattern);
+    bottom_scanner->set_scan_pattern(scan_pattern);
+    // <---- Set scanner parameters
 
     // ----> Create a pointcloud stream object to receive pointclouds
 	side_point_cloud_stream = side_scanner->get_point_cloud_stream();
