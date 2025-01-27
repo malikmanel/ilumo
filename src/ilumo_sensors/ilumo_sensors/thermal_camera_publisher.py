@@ -37,6 +37,8 @@ class ThermalCameraPublisher(Node):
         self.declare_parameter('thermal_camera_updown', True, updown_param_descriptor)
         self.declare_parameter('thermal_camera_verbosity', 2, logging_param_desc)
 
+        self.get_logger().info(f'Starting thermal camera node ...')
+
         self.data_pub_ = self.create_publisher(ThermalImage, "thermal_camera/thermal_data", 10)
         self.img_pub_ = self.create_publisher(Image, "thermal_camera/image", 10)
         self.temp_pub_ = self.create_publisher(Temperature, "thermal_camera/sensor_temperature", 10)
@@ -96,9 +98,9 @@ class ThermalCameraPublisher(Node):
         data, header = self.mi48.read()
         timestamp = self.get_clock().now()
 
-        self.get_logger().info(f"Thermal timestamp: {timestamp.nanoseconds/1e9}")
+        self.get_logger().debug(f"Thermal timestamp: {timestamp.nanoseconds/1e9}")
         if self.last_img_ts!=0:
-            self.get_logger().info(f" [{1e9/(timestamp.nanoseconds-self.last_img_ts)} Hz]")
+            self.get_logger().debug(f" [{1e9/(timestamp.nanoseconds-self.last_img_ts)} Hz]")
 
         self.last_img_ts = timestamp.nanoseconds
 

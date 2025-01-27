@@ -13,7 +13,7 @@
 // <---- Includes
 
 using namespace std::chrono_literals;
-//#define SENSOR_SYNC
+
 // ----> Functions
 // Sensor acquisition runs at 400Hz, so it must be executed in a different thread
 
@@ -63,6 +63,8 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     this->declare_parameter("stereo_camera_fps", 1, fps_param_desc);
     this->declare_parameter("stereo_camera_verbosity", 2, logging_param_desc);
     // <---- Declare the parameters
+
+    RCLCPP_INFO_STREAM(get_logger(), "Starting stereo camera node ...");
 
     // ----> Create the publishers
     left_image_pub_ = this->create_publisher<sensor_msgs::msg::Image>("stereo_camera/left_camera/image", 10);
@@ -152,15 +154,6 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
 
     RCLCPP_INFO_STREAM(get_logger(), "Sensors Capture connected to camera sn: " << sensCap->getSerialNumber());
 
-    #ifdef SENSOR_SYNC
-    // ----> Enable video/sensors synchronization
-    if( !videoCap->enableSensorSync(sensCap.get()) )
-    {
-        RCLCPP_ERROR(get_logger(), "Cannot sync the camera to the sensors.");
-    }
-    // <---- Enable video/sensors synchronization
-    #endif
-
     // ----> Prepare Sensor messages
     imu_msg = sensor_msgs::msg::Imu();
     mag_msg = sensor_msgs::msg::MagneticField();
@@ -179,23 +172,22 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
     right_cam_temp_msg.header.frame_id = "stereo_camera_top";
     // <---- Prepare Sensor messages
 
-    // Previous timestamps to calculate frequency
+    // ----> Set previous timestamps to calculate frequency (debugging)
     last_img_ts = 0;
     last_imu_ts = 0;
     last_mag_ts = 0;
     last_env_ts = 0;
     last_cam_temp_ts = 0;
+    // <---- Set previous timestamps to calculate frequency
 
-    frame_fps = 0;
-
+    // ----> Initialize publishers
     callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
 
     image_timer_ = this->create_wall_timer(20ms, std::bind(&StereoCameraPublisher::imageCallback, this), 
                                            callback_group);
     sensor_timer_ = this->create_wall_timer(2ms, std::bind(&StereoCameraPublisher::sensorCallback, this),
                                            callback_group);
-
-    RCLCPP_INFO_STREAM(get_logger(), "Stereo camera setup successful. Streaming Data ...");
+    // <---- Initialize publishers
 }
 
 void StereoCameraPublisher::imageCallback()
@@ -203,11 +195,10 @@ void StereoCameraPublisher::imageCallback()
     // ----> Get Video frame
     const sl_oc::video::Frame frame = videoCap->getLastFrame(10);
     // <---- Get Video frame
-    std::cout << this->now().nanoseconds() << std::endl;
-    // If the frame is valid we can update it
-    if(frame.data!=nullptr && frame.timestamp!=last_img_ts)
-    {
-        frame_fps = 1e9/static_cast<float>(frame.timestamp-last_img_ts);
+
+    // Publish frame data if the frame is valid
+    if(frame.data!=nullptr && frame.timestamp!=last_img_ts){
+        float frame_fps = 1e9/static_cast<float>(frame.timestamp-last_img_ts);
         last_img_ts = frame.timestamp;
 
         // ----> Video Debug information

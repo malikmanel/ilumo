@@ -58,7 +58,6 @@ private:
     uint64_t last_mag_ts;
     uint64_t last_env_ts;
     uint64_t last_cam_temp_ts;
-    float frame_fps;
     int width,height;
 
     cv::Mat frameBGR;

@@ -123,6 +123,8 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     this->declare_parameter("lidar_verbosity", 2, logging_param_desc);
     // <---- Declare the parameters
 
+    RCLCPP_INFO_STREAM(get_logger(), "Starting LiDAR camera node ...");
+
     // ----> Create the publishers
     side_point_cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("lidar_camera/side_camera/point_cloud", 10);
     side_imu_burst_pub_ = this->create_publisher<ilumo_interfaces::msg::ImuBurst>("lidar_camera/side_camera/imu_burst", 10);
@@ -133,19 +135,20 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     bottom_imu_burst_pub_ = this->create_publisher<ilumo_interfaces::msg::ImuBurst>("lidar_camera/bottom_camera/imu_burst", 10);
     bottom_avg_imu_pub_ = this->create_publisher<sensor_msgs::msg::Imu>("lidar_camera/bottom_camera/avg_imu", 10);
     bottom_temp_pub_ = this->create_publisher<sensor_msgs::msg::Temperature>("lidar_camera/bottom_camera/temperature", 10);
-
-    std::string side_scanner_ip_or_host = "localhost";
-    std::string bottom_scanner_ip_or_host = "localhost";
     // <---- Create the publishers
 
     // ----> Creating a connection to the device.
+    // TODO: Set correct ip and error logging for failure
+    std::string side_scanner_ip_or_host = "localhost";
+    std::string bottom_scanner_ip_or_host = "localhost";
     std::shared_ptr<blickfeld::scanner> side_scanner = blickfeld::scanner::connect(side_scanner_ip_or_host);
     std::shared_ptr<blickfeld::scanner> bottom_scanner = blickfeld::scanner::connect(bottom_scanner_ip_or_host);
-    RCLCPP_INFO_STREAM(get_logger(),"Connected to the Blickfeld sensor at address " << side_scanner_ip_or_host);
-    RCLCPP_INFO_STREAM(get_logger(),"Connected to the Blickfeld sensor at address " << bottom_scanner_ip_or_host);
+
+    RCLCPP_INFO_STREAM(get_logger(),"Connected to the Blickfeld sensor (side) at address " << side_scanner_ip_or_host);
+    RCLCPP_INFO_STREAM(get_logger(),"Connected to the Blickfeld sensor (bottom) at address " << bottom_scanner_ip_or_host);
     // <---- Creating a connection to the device.
 
-    // ----> Set scanner parameters
+    // ----> Set the scanner parameters
     blickfeld::protocol::config::ScanPattern scan_pattern;
 
     double hori_fov = this->get_parameter("lidar_horizontal_fov").as_double();
@@ -166,7 +169,7 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
 	scan_pattern = side_scanner->fill_scan_pattern(scan_pattern);
 	side_scanner->set_scan_pattern(scan_pattern);
     bottom_scanner->set_scan_pattern(scan_pattern);
-    // <---- Set scanner parameters
+    // <---- Set the scanner parameters
 
     // ----> Create a pointcloud stream object to receive pointclouds
 	side_point_cloud_stream = side_scanner->get_point_cloud_stream();
@@ -197,6 +200,13 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     bottom_avg_imu_msg.header.frame_id = "lidar_bottom";
     bottom_temp_msg.header.frame_id ="lidar_bottom";
     // <---- Prepare LiDAR messages
+
+    // ----> Set previous timestamps to calculate frequency (debugging)
+    last_pc_side_ts = 0;
+    last_pc_bottom_ts = 0;
+    last_imu_side_ts = 0;
+    last_imu_bottom_ts = 0;
+    // ----> Set previous timestamps to calculate frequency
 
     // ----> Initialize publishers
     side_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
@@ -263,6 +273,20 @@ void LiDARPublisher::pointcloudCallback(std::shared_ptr<blickfeld::scanner::poin
                                         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr point_cloud_pub_)
 {
     const blickfeld::protocol::data::Frame frame = point_cloud_stream->recv_frame();
+    // TODO This "blocks" if no frame available. What does this mean? If we wait until next frame we completely fuck up our Reentrant callback group
+
+    RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(9) << "Point cloud timestamp (" 
+                                      << point_cloud_msg->header.frame_id << "): " 
+                                      << static_cast<double>(frame.start_time_ns())/1e9<< " sec" );
+    if (point_cloud_msg->header.frame_id == "lidar_side"){
+        if(last_pc_side_ts!=0)
+            RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(frame.start_time_ns()-last_pc_side_ts) << " Hz]");
+        last_pc_side_ts = frame.start_time_ns();
+    } else if (point_cloud_msg->header.frame_id == "lidar_bottom") {
+        if(last_pc_bottom_ts!=0)
+            RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(frame.start_time_ns()-last_pc_bottom_ts) << " Hz]");
+        last_pc_bottom_ts = frame.start_time_ns();
+    }
 
     const auto number_of_points = frame.total_number_of_returns(); // change to total_number_of_points if we ignore returns
 
@@ -291,7 +315,6 @@ void LiDARPublisher::pointcloudCallback(std::shared_ptr<blickfeld::scanner::poin
             // this might not be necessary, maybe the first return is enough
             for (int r_ind = 0; r_ind < point.returns_size(); r_ind++) {
                 auto& ret = point.returns(r_ind);
-                printf("coordinates: (%f, %f, %f)\n", ret.cartesian(0), ret.cartesian(1), ret.cartesian(2));
 
                 // also relevant: ret.intensity()
                 point_cloud_msg->data[point_index * point_cloud_msg->point_step + point_cloud_msg->fields[0].offset] = ret.cartesian(0);
@@ -318,7 +341,21 @@ void LiDARPublisher::imuCallback(std::shared_ptr<blickfeld::imu_stream> imu_stre
                                  rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr avg_imu_pub_)
 {
     const blickfeld::protocol::data::IMU data = imu_stream->recv_burst();
-    // received as bursts of data, so a lower frequency is possible. how do I know how large a burst ist?
+    // received as bursts of data, so a lower frequency is possible. how do I know how large a burst is?
+    // TODO This "blocks" if no frame available. What does this mean? If we wait until next frame we completely fuck up our Reentrant callback group
+
+    RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(9) << "IMU data timestamp (" 
+                                      << avg_imu_msg.header.frame_id << "): " 
+                                      << static_cast<double>(data.start_time_ns())/1e9<< " sec" );
+    if (avg_imu_msg.header.frame_id == "lidar_side"){
+        if(last_imu_side_ts!=0)
+            RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(data.start_time_ns()-last_imu_side_ts) << " Hz]");
+        last_pc_side_ts = data.start_time_ns();
+    } else if (avg_imu_msg.header.frame_id == "lidar_bottom") {
+        if(last_imu_bottom_ts!=0)
+            RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(data.start_time_ns()-last_imu_bottom_ts) << " Hz]");
+        last_pc_bottom_ts = data.start_time_ns();
+    }
 
     const auto number_of_samples = data.packed().length();
 

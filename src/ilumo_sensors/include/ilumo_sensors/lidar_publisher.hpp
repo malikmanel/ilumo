@@ -61,6 +61,11 @@ private:
     std::shared_ptr<blickfeld::scanner> bottom_scanner;
     std::shared_ptr<blickfeld::scanner::point_cloud_stream<blickfeld::protocol::data::Frame> > bottom_point_cloud_stream;
     std::shared_ptr<blickfeld::imu_stream> bottom_imu_stream;
+
+    uint64_t last_pc_side_ts;
+    uint64_t last_pc_bottom_ts;
+    uint64_t last_imu_side_ts;
+    uint64_t last_imu_bottom_ts;
 };
 
 #endif // LIDAR_PUBLISHER_HPP
