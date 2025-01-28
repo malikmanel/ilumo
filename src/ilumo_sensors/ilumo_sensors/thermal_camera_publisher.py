@@ -20,8 +20,8 @@ class ThermalCameraPublisher(Node):
         fps_param_descriptor = ParameterDescriptor(name = "Framerate",
                                                    type = 2, # Integer
                                                    description = 'Framerate of the thermal camera. (default=15)', 
-                                                   integer_range = IntegerRange(from_value = 1,
-                                                                                to_value = 25))
+                                                   integer_range = [IntegerRange(from_value = 1,
+                                                                                 to_value = 25)])
         
         updown_param_descriptor = ParameterDescriptor(name = "Upside Down",
                                                       type = 1, # Bool
@@ -30,8 +30,8 @@ class ThermalCameraPublisher(Node):
         logging_param_desc = ParameterDescriptor(name = "Verbosity",
                                                  type = 2, # Integer
                                                  description = 'Logging verbosity of the thermal camera node. 0 = None, 1 = Error, 2 = Warning, 3 = Info (default=2)', 
-                                                 integer_range = IntegerRange(from_value = 0,
-                                                                              to_value = 3))
+                                                 integer_range = [IntegerRange(from_value = 0,
+                                                                               to_value = 3)])
 
         self.declare_parameter('fps', 15, fps_param_descriptor)
         self.declare_parameter('updown', True, updown_param_descriptor)

@@ -15,6 +15,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/ThermalImage.msg"
   "msg/ImuSingle.msg"
   "msg/ImuBurst.msg"
+  "srv/SetLedBrightness.srv"
+  "srv/SetMotorSpeed.srv"
   DEPENDENCIES std_msgs geometry_msgs builtin_interfaces
 )
 

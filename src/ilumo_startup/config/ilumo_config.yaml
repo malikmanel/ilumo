@@ -16,7 +16,7 @@ thermal_camera_publisher:
   ros__parameters:
     fps:                15    # [1, 25], usually only reaches ~12.5
     updown:             True  # required if thermal camera is upside down (USB port is up)
-    verbosity:          2     # 0 = None, 1 = Error, 2 = Warning, 3 = Info
+    verbosity:          2     # 0 = None, 1 = Error, 2 = Warning, 3 = Info, doesn't do anything atm
 
 pwm_controller:
   ros__parameters:

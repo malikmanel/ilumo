@@ -10,42 +10,42 @@ def generate_launch_description():
     config = os.path.join(
         get_package_share_directory('ilumo_startup'),
         'config',
-        'params.yaml'
+        'ilumo_config.yaml'
         )
 
     stereo_camera_node = Node(
         package='ilumo_sensors',
         executable='stereo_camera_publisher',
         name='stereo_camera',
-        parameter=[config]
+        parameters=[config]
     )
 
     lidar_node = Node(
         package='ilumo_sensors',
         executable='lidar_publisher',
         name='lidar',
-        parameter=[config]
+        parameters=[config]
     )
 
     thermal_camera_node = Node(
         package='ilumo_sensors',
-        executable='thermal_camera_publisher',
+        executable='thermal_camera_publisher.py',
         name='thermal_camera',
-        parameter=[config]
+        parameters=[config]
     )
 
     pwm_controller_node = Node(
         package='ilumo_control',
         executable='pwm_controller',
         name='pwm_controller',
-        parameter=[config]
+        parameters=[config]
     )
 
     kinematics_node = Node(
         package='ilumo_description',
         executable='ilumo_kinematics',
         name='kinematics',
-        parameter=[config]
+        parameters=[config]
     )
 
     return LaunchDescription([
