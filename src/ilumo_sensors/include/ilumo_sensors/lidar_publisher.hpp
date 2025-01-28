@@ -26,7 +26,7 @@ private:
     rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr bottom_avg_imu_pub_;
     rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr bottom_temp_pub_;
 
-    std::shared_ptr<sensor_msgs::msg::PointCloud2> side_point_cloud_msg;
+    sensor_msgs::msg::PointCloud2::SharedPtr side_point_cloud_msg;
     ilumo_interfaces::msg::ImuBurst side_imu_burst_msg;
     sensor_msgs::msg::Imu side_avg_imu_msg;
     sensor_msgs::msg::Temperature side_temp_msg;
@@ -53,7 +53,6 @@ private:
                      sensor_msgs::msg::Imu avg_imu_msg,
                      rclcpp::Publisher<ilumo_interfaces::msg::ImuBurst>::SharedPtr imu_burst_pub_,
                      rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr avg_imu_pub_);
-
 
     std::shared_ptr<blickfeld::scanner> side_scanner;
     std::shared_ptr<blickfeld::scanner::point_cloud_stream<blickfeld::protocol::data::Frame> > side_point_cloud_stream;
