@@ -10,57 +10,46 @@ using namespace std::chrono_literals;
 using namespace std::placeholders;
 
 template <typename FieldT>
-void addPointCloudField(sensor_msgs::msg::PointCloud2& point_cloud_msg,
+void addPointCloudField(sensor_msgs::msg::PointCloud2::SharedPtr point_cloud_msg,
                         const std::string& name, 
-                        uint32_t offset,
                         uint8_t datatype) 
 {
     sensor_msgs::msg::PointField field;
     field.name = name;
     field.count = 1;
     field.datatype = datatype;
-    field.offset = offset;
-    point_cloud_msg.fields.push_back(field);
-    point_cloud_msg.point_step += sizeof(FieldT);
+    field.offset = point_cloud_msg->point_step;
+    point_cloud_msg->fields.push_back(field);
+    point_cloud_msg->point_step += sizeof(FieldT);
 }
 
-sensor_msgs::msg::PointCloud2::SharedPtr makePointCloudMessage()
+void makePointCloudMessage(sensor_msgs::msg::PointCloud2::SharedPtr point_cloud_msg)
 {
-    auto point_cloud_msg = sensor_msgs::msg::PointCloud2::SharedPtr();
-    addPointCloudField<float>(std::ref(*point_cloud_msg), 
-                              "x", 
-                              point_cloud_msg->point_step,
+    point_cloud_msg->point_step = 0;
+    addPointCloudField<float>(point_cloud_msg, 
+                              "x",
                               sensor_msgs::msg::PointField::FLOAT32);
-    addPointCloudField<float>(std::ref(*point_cloud_msg), 
-                              "y", 
-                              point_cloud_msg->point_step,
+    addPointCloudField<float>(point_cloud_msg, 
+                              "y",
                               sensor_msgs::msg::PointField::FLOAT32);
-    addPointCloudField<float>(std::ref(*point_cloud_msg), 
-                              "z", 
-                              point_cloud_msg->point_step,
+    addPointCloudField<float>(point_cloud_msg, 
+                              "z",
                               sensor_msgs::msg::PointField::FLOAT32);
-    addPointCloudField<uint32_t>(std::ref(*point_cloud_msg), 
-                                 "intensity", 
-                                 point_cloud_msg->point_step,
+    addPointCloudField<uint32_t>(point_cloud_msg, 
+                                 "intensity",
                                  sensor_msgs::msg::PointField::UINT32);
-    addPointCloudField<uint32_t>(std::ref(*point_cloud_msg), 
-                                 "ambient_light", 
-                                 point_cloud_msg->point_step,
+    addPointCloudField<uint32_t>(point_cloud_msg, 
+                                 "ambient_light",
                                  sensor_msgs::msg::PointField::UINT32);
-    addPointCloudField<float>(std::ref(*point_cloud_msg), 
-                              "time_offset", 
-                              point_cloud_msg->point_step,
+    addPointCloudField<float>(point_cloud_msg, 
+                              "time_offset",
                               sensor_msgs::msg::PointField::FLOAT32);
-    addPointCloudField<uint32_t>(std::ref(*point_cloud_msg), 
-                                 "return_id", 
-                                 point_cloud_msg->point_step,
+    addPointCloudField<uint32_t>(point_cloud_msg, 
+                                 "return_id",
                                  sensor_msgs::msg::PointField::UINT32);
-    addPointCloudField<uint32_t>(std::ref(*point_cloud_msg), 
+    addPointCloudField<uint32_t>(point_cloud_msg, 
                                  "point_id", 
-                                 point_cloud_msg->point_step,
                                  sensor_msgs::msg::PointField::UINT32);
-
-    return point_cloud_msg;
 }
 
 LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
@@ -139,10 +128,10 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
 
     // ----> Creating a connection to the device.
     // TODO: Set correct ip and error logging for failure
-    std::string side_scanner_ip_or_host = "localhost";
-    std::string bottom_scanner_ip_or_host = "localhost";
-    std::shared_ptr<blickfeld::scanner> side_scanner = blickfeld::scanner::connect(side_scanner_ip_or_host);
-    std::shared_ptr<blickfeld::scanner> bottom_scanner = blickfeld::scanner::connect(bottom_scanner_ip_or_host);
+    std::string side_scanner_ip_or_host = "192.168.26.2";
+    std::string bottom_scanner_ip_or_host = "cube1-bottom";
+    side_scanner = blickfeld::scanner::connect(side_scanner_ip_or_host);
+    //std::shared_ptr<blickfeld::scanner> bottom_scanner = blickfeld::scanner::connect(bottom_scanner_ip_or_host);
 
     RCLCPP_INFO_STREAM(get_logger(),"Connected to the Blickfeld sensor (side) at address " << side_scanner_ip_or_host);
     RCLCPP_INFO_STREAM(get_logger(),"Connected to the Blickfeld sensor (bottom) at address " << bottom_scanner_ip_or_host);
@@ -168,24 +157,26 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
 
 	scan_pattern = side_scanner->fill_scan_pattern(scan_pattern);
 	side_scanner->set_scan_pattern(scan_pattern);
-    bottom_scanner->set_scan_pattern(scan_pattern);
+    //bottom_scanner->set_scan_pattern(scan_pattern);
     // <---- Set the scanner parameters
 
     // ----> Create a pointcloud stream object to receive pointclouds
 	side_point_cloud_stream = side_scanner->get_point_cloud_stream();
-    side_imu_stream = bottom_scanner->get_imu_stream();
+    side_imu_stream = side_scanner->get_imu_stream();
 
-    bottom_point_cloud_stream = side_scanner->get_point_cloud_stream();
-    bottom_imu_stream = bottom_scanner->get_imu_stream();
+    //bottom_point_cloud_stream = side_scanner->get_point_cloud_stream();
+    //bottom_imu_stream = bottom_scanner->get_imu_stream();
     // <---- Create a pointcloud stream object to receive pointclouds
 
     // ----> Prepare LiDAR messages
-    side_point_cloud_msg = makePointCloudMessage();
+    side_point_cloud_msg = std::make_shared<sensor_msgs::msg::PointCloud2>();
+    makePointCloudMessage(side_point_cloud_msg);
     side_imu_burst_msg = ilumo_interfaces::msg::ImuBurst();
     side_avg_imu_msg = sensor_msgs::msg::Imu();
     side_temp_msg = sensor_msgs::msg::Temperature();
 
-    bottom_point_cloud_msg = makePointCloudMessage();
+    bottom_point_cloud_msg = std::make_shared<sensor_msgs::msg::PointCloud2>();
+    makePointCloudMessage(bottom_point_cloud_msg);
     bottom_imu_burst_msg = ilumo_interfaces::msg::ImuBurst();
     bottom_avg_imu_msg = sensor_msgs::msg::Imu();
     bottom_temp_msg = sensor_msgs::msg::Temperature();
@@ -210,35 +201,36 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
 
     // ----> Initialize publishers
     side_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
-    bottom_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+    //bottom_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
 
     side_point_cloud_timer_ = create_wall_timer(15ms, [this,
-                                                       side_point_cloud_stream = this->side_point_cloud_stream, 
-                                                       side_point_cloud_msg = this->side_point_cloud_msg,
-                                                       side_point_cloud_pub_ = this->side_point_cloud_pub_]()
+                                                       &point_cloud_stream = this->side_point_cloud_stream, 
+                                                       &point_cloud_msg = this->side_point_cloud_msg,
+                                                       &point_cloud_pub_ = this->side_point_cloud_pub_]()
                                                        -> void { LiDARPublisher::pointcloudCallback(
-                                                        side_point_cloud_stream,
-                                                        side_point_cloud_msg,
-                                                        side_point_cloud_pub_
+                                                        point_cloud_stream,
+                                                        point_cloud_msg,
+                                                        point_cloud_pub_
                                                         ); },
                                                 side_callback_group
                                                );
     side_imu_timer_ = create_wall_timer(0.8ms, [this,
-                                                side_imu_stream = this->side_imu_stream,
-                                                side_imu_burst_msg = this->side_imu_burst_msg,
-                                                side_avg_imu_msg = this->side_avg_imu_msg,
-                                                side_imu_burst_pub_ = this->side_imu_burst_pub_,
-                                                side_avg_imu_pub_ = this->side_avg_imu_pub_]()
+                                                &imu_stream = this->side_imu_stream,
+                                                &imu_burst_msg = this->side_imu_burst_msg,
+                                                &avg_imu_msg = this->side_avg_imu_msg,
+                                                &imu_burst_pub_ = this->side_imu_burst_pub_,
+                                                &avg_imu_pub_ = this->side_avg_imu_pub_]()
                                                 -> void { LiDARPublisher::imuCallback(
-                                                    side_imu_stream,
-                                                    side_imu_burst_msg,
-                                                    side_avg_imu_msg,
-                                                    side_imu_burst_pub_,
-                                                    side_avg_imu_pub_
+                                                    imu_stream,
+                                                    imu_burst_msg,
+                                                    avg_imu_msg,
+                                                    imu_burst_pub_,
+                                                    avg_imu_pub_
                                                 ); },
                                         side_callback_group
-                                       );                                           
-
+                                       );  
+                                      
+    /*
     bottom_point_cloud_timer_ = create_wall_timer(15ms, [this,
                                                          bottom_point_cloud_stream = this->bottom_point_cloud_stream, 
                                                          bottom_point_cloud_msg = this->bottom_point_cloud_msg,
@@ -264,7 +256,7 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
                                                     bottom_avg_imu_pub_
                                                   ); },
                                           bottom_callback_group
-                                         );   
+                                         );   */
     // <---- Initialize publishers
 }
 
@@ -340,7 +332,9 @@ void LiDARPublisher::imuCallback(std::shared_ptr<blickfeld::imu_stream> imu_stre
                                  rclcpp::Publisher<ilumo_interfaces::msg::ImuBurst>::SharedPtr imu_burst_pub_,
                                  rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr avg_imu_pub_)
 {
+    std::cout << "YESH" << std::endl;
     const blickfeld::protocol::data::IMU data = imu_stream->recv_burst();
+    std::cout << "YESH" << std::endl;
     // received as bursts of data, so a lower frequency is possible. how do I know how large a burst is?
     // TODO This "blocks" if no frame available. What does this mean? If we wait until next frame we completely fuck up our Reentrant callback group
 
@@ -419,7 +413,9 @@ int main(int argc, char* argv[])
 {
     rclcpp::init(argc, argv);
     auto node = std::make_shared<LiDARPublisher>("lidar_publisher");
-    rclcpp::spin(node);
+    rclcpp::executors::MultiThreadedExecutor executor;
+    executor.add_node(node);
+    executor.spin();
     rclcpp::shutdown();
     return 0;
 }

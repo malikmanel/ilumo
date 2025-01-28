@@ -18,6 +18,7 @@ find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(zed_open_capture REQUIRED)
 find_package(ilumo_interfaces REQUIRED)
+find_package(Protobuf REQUIRED)
 find_package(blickfeld-scanner 2.18.2 REQUIRED full)
 
 find_library(BLICKFELD_LIBRARY
