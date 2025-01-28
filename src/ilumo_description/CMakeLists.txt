@@ -15,8 +15,8 @@ include_directories(
   include
 )
 
-add_executable(ilumo_transforms src/ilumo_transforms.cpp)
-ament_target_dependencies(ilumo_transforms rclcpp tf2_ros geometry_msgs sensor_msgs)
+add_executable(ilumo_kinematics src/ilumo_kinematics.cpp)
+ament_target_dependencies(ilumo_kinematics rclcpp tf2_ros geometry_msgs sensor_msgs)
 
 install(
   DIRECTORY meshes urdf
@@ -24,7 +24,7 @@ install(
 )
 
 install(TARGETS
-  ilumo_transforms
+  ilumo_kinematics
   DESTINATION lib/${PROJECT_NAME}
 )
 
