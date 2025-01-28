@@ -1,60 +1,30 @@
-bumperbot_controller:
+stereo_camera_publisher:
   ros__parameters:
-    type        : diff_drive_controller/DiffDriveController
-    use_stamped_vel: true
-    left_wheel_names  : ['wheel_left_joint']
-    right_wheel_names : ['wheel_right_joint']
+    resolution:         1     # 0 = VGA, 1 = HD720, 2 = HD1080, 3 = HD2K
+    fps:                1     # 0 = 15fps, 1 = 30fps, 2 = 60fps, 3 = 100fps
+    verbosity:          2     # 0 = None, 1 = Error, 2 = Warning, 3 = Info
 
-    publish_rate: 50.0               # default: 50
-    pose_covariance_diagonal : [0.001, 0.001, 1.0e-3, 1.0e-3, 1.0e-3, 0.01]
-    twist_covariance_diagonal: [0.001, 0.001, 1.0e-3, 1.0e-3, 1.0e-3, 0.01]
-
-    wheel_separation : 0.17
-    wheel_radius : 0.033
-
-    wheel_separation_multiplier: 1.0
-    left_wheel_radius_multiplier: 1.0
-    right_wheel_radius_multiplier: 1.0
-
-    # Velocity commands timeout [s], default 0.5
-    cmd_vel_timeout: 0.5
-
-    # Base frame_id
-    base_frame_id: base_footprint #default: base_link
-
-    # Publish limited velocity
-    publish_limited_velocity: true
-
-    # Publish wheel data
-    publish_wheel_data: true
-
-    # Publish to TF directly or not
-    enable_odom_tf: true
-
-    # Velocity and acceleration limits
-    # Whenever a min_* is unspecified, default to -max_*
-    linear:
-      x:
-        has_velocity_limits    : true
-        max_velocity           : 1.0  # m/s
-        min_velocity           : -0.5 # m/s
-        has_acceleration_limits: true
-        max_acceleration       : 0.8  # m/s^2
-        min_acceleration       : -0.4 # m/s^2
-        has_jerk_limits        : false
-        max_jerk               : 5.0  # m/s^3
-    angular:
-      z:
-        has_velocity_limits    : true
-        max_velocity           : 1.7  # rad/s
-        has_acceleration_limits: true
-        max_acceleration       : 1.5  # rad/s^2
-        has_jerk_limits        : false
-        max_jerk               : 2.5  # rad/s^3
-
-
-simple_velocity_controller:
+lidar_publisher:
   ros__parameters:
-    joints:
-      - wheel_left_joint
-      - wheel_right_joint
+    horizontal_fov:     70.0  # [10.0, 70.0]
+    vertical_fov:       20.0  # [5.0, 30.0]
+    pulse_angle_space:  0.4   # [0.4, 1.0], defines horizontal sample resolution (degree)
+    scan_lines:         350   # [5, 400], higher scan lines = lower frame rate
+    verbosity:          2     # 0 = None, 1 = Error, 2 = Warning, 3 = Info
+
+thermal_camera_publisher:
+  ros__parameters:
+    fps:                15    # [1, 25], usually only reaches ~12.5
+    updown:             True  # required if thermal camera is upside down (USB port is up)
+    verbosity:          2     # 0 = None, 1 = Error, 2 = Warning, 3 = Info
+
+pwm_controller:
+  ros__parameters:
+    led_brightness:     800   # [0, 1005] total brightness of the LED strips (lumen)
+
+ilumo_kinematics:
+  ros__parameters:
+    dynamic_tf:         False # Enables dynamic calculation of the transform 
+                              # between ilumo_base and external_connector
+                              # using a published motor joint state.
+                              # (Motor state publishing not implemented, no sensor available)

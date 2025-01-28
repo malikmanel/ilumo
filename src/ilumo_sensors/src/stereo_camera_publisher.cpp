@@ -59,9 +59,9 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
                                         .set__to_value(3)
                                         .set__step(1)};
 
-    this->declare_parameter("stereo_camera_resolution", 1, resolution_param_desc);
-    this->declare_parameter("stereo_camera_fps", 1, fps_param_desc);
-    this->declare_parameter("stereo_camera_verbosity", 2, logging_param_desc);
+    this->declare_parameter("resolution", 1, resolution_param_desc);
+    this->declare_parameter("fps", 1, fps_param_desc);
+    this->declare_parameter("verbosity", 2, logging_param_desc);
     // <---- Declare the parameters
 
     RCLCPP_INFO_STREAM(get_logger(), "Starting stereo camera node ...");
@@ -81,9 +81,9 @@ StereoCameraPublisher::StereoCameraPublisher(const std::string& name) : Node(nam
 
     // ----> Set the video parameters
     sl_oc::video::VideoParams params;
-    int resolution_param = this->get_parameter("stereo_camera_resolution").as_int();
-    int fps_param = this->get_parameter("stereo_camera_fps").as_int();
-    int verbose_param = this->get_parameter("stereo_camera_verbosity").as_int();
+    int resolution_param = this->get_parameter("resolution").as_int();
+    int fps_param = this->get_parameter("fps").as_int();
+    int verbose_param = this->get_parameter("verbosity").as_int();
 
     sl_oc::VERBOSITY verbose;
     switch (verbose_param) {

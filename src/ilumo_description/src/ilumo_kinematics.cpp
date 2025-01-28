@@ -8,6 +8,17 @@ using namespace std::placeholders;
 
 IlumoKinematics::IlumoKinematics(const std::string& name): Node(name)
 {
+    // ----> Declare the parameters
+    // Enable dynamic transform
+    auto dynamic_tf_desc = rcl_interfaces::msg::ParameterDescriptor{};
+    dynamic_tf_desc.name = "Dynamic Transform";
+    dynamic_tf_desc.type = 1; // Bool
+    dynamic_tf_desc.description = "Enables dynamic calculation of the transform between ilumo_base and external_connector"
+                                  "using a published motor joint state (Not yet implemented). (default=false)";
+    
+    this->declare_parameter("dynamic_tf", false, dynamic_tf_desc);
+    // <---- Declare the parameters
+
     // Quaternion for calculations from radian
     tf2::Quaternion q;
 
@@ -116,6 +127,22 @@ IlumoKinematics::IlumoKinematics(const std::string& name): Node(name)
     thermal_camera_tf_stamped_.transform.rotation.w = q.w();
     // <---- Setup thermal camera transform
 
+    // ----> Setup external connector transform
+    external_connector_tf_stamped_.header.stamp = get_clock()->now();
+    external_connector_tf_stamped_.header.frame_id = "ilumo_base";
+    external_connector_tf_stamped_.child_frame_id = "external_connector";
+    external_connector_tf_stamped_.transform.translation.x = 0;
+    external_connector_tf_stamped_.transform.translation.y = 0;
+    external_connector_tf_stamped_.transform.translation.z = 0.344;
+
+    q.setRPY(0.0, 0.0, 0.0);
+
+    external_connector_tf_stamped_.transform.rotation.x = q.x();
+    external_connector_tf_stamped_.transform.rotation.y = q.y();
+    external_connector_tf_stamped_.transform.rotation.z = q.z();
+    external_connector_tf_stamped_.transform.rotation.w = q.w();
+    // <---- Setup external connector transform
+
     // ----> Broadcast transforms
     stereo_camera_top_tf_broadcaster_->sendTransform(stereo_camera_top_tf_stamped_);
     stereo_camera_bottom_tf_broadcaster_->sendTransform(stereo_camera_bottom_tf_stamped_);
@@ -125,9 +152,16 @@ IlumoKinematics::IlumoKinematics(const std::string& name): Node(name)
     thermal_camera_tf_broadcaster_->sendTransform(thermal_camera_tf_stamped_);
     // <---- Broadcast transforms
 
-    sub_ = this->create_subscription<sensor_msgs::msg::JointState>(
-      "/ilumo_controller/motor_state", 10,
-      std::bind(&IlumoKinematics::handleExternalConnectorPose, this, std::placeholders::_1));
+    // ----> Set connector joint transform
+    if (this->get_parameter("dynamic_tf").as_bool()){
+        sub_ = this->create_subscription<sensor_msgs::msg::JointState>(
+        "/ilumo_controller/motor_state", 10,
+        std::bind(&IlumoKinematics::handleExternalConnectorPose, this, std::placeholders::_1));
+    } else {
+        external_connector_tf_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
+        external_connector_tf_broadcaster_->sendTransform(external_connector_tf_stamped_);
+    }
+    // <---- Set connector joint transform
     }
 
 
@@ -136,24 +170,17 @@ void IlumoKinematics::handleExternalConnectorPose(const std::shared_ptr<sensor_m
     // Quaternion for calculations from radian
     tf2::Quaternion q;
 
-    // ----> Setup external connector transform
-    external_connector_tf_stamped_.header.stamp = get_clock()->now();
-    external_connector_tf_stamped_.header.frame_id = "ilumo_base";
-    external_connector_tf_stamped_.child_frame_id = "external_connector";
-    external_connector_tf_stamped_.transform.translation.x = 0;
-    external_connector_tf_stamped_.transform.translation.y = 0;
-    external_connector_tf_stamped_.transform.translation.z = 0.344;
-
+    // ----> Set dynamic rotation value
     q.setRPY(0.0, 0.0, msg->position[0]);
 
     external_connector_tf_stamped_.transform.rotation.x = q.x();
     external_connector_tf_stamped_.transform.rotation.y = q.y();
     external_connector_tf_stamped_.transform.rotation.z = q.z();
     external_connector_tf_stamped_.transform.rotation.w = q.w();
-    // <---- Setup external connector transform
+    // <---- Set dynamic rotation value
 
     // Broadcast transform
-    external_connector_tf_broadcaster_->sendTransform(external_connector_tf_stamped_);
+    external_connector_tf_broadcaster_dynamic_->sendTransform(external_connector_tf_stamped_);
 }
 
 int main(int argc, char* argv[])

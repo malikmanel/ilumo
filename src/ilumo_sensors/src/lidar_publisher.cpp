@@ -116,11 +116,11 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
                                         .set__to_value(3)
                                         .set__step(1)};
 
-    this->declare_parameter("lidar_horizontal_fov", 70.0, hori_fov_param_desc);
-    this->declare_parameter("lidar_vertical_fov", 20.0, vert_fov_desc);
-    this->declare_parameter("lidar_pulse_angle_space", 0.4, pulse_space_desc);
-    this->declare_parameter("lidar_scan_lines", 350, scan_lines_param_desc);
-    this->declare_parameter("lidar_verbosity", 2, logging_param_desc);
+    this->declare_parameter("horizontal_fov", 70.0, hori_fov_param_desc);
+    this->declare_parameter("vertical_fov", 20.0, vert_fov_desc);
+    this->declare_parameter("pulse_angle_space", 0.4, pulse_space_desc);
+    this->declare_parameter("scan_lines", 350, scan_lines_param_desc);
+    this->declare_parameter("verbosity", 2, logging_param_desc);
     // <---- Declare the parameters
 
     RCLCPP_INFO_STREAM(get_logger(), "Starting LiDAR camera node ...");
@@ -151,11 +151,11 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     // ----> Set the scanner parameters
     blickfeld::protocol::config::ScanPattern scan_pattern;
 
-    double hori_fov = this->get_parameter("lidar_horizontal_fov").as_double();
-    double vert_fov = this->get_parameter("lidar_vertical_fov").as_double();
-    double angle_space = this->get_parameter("lidar_pulse_angle_space").as_double();
-    int scan_lines = this->get_parameter("lidar_scan_lines").as_int();
-    int verbose_param = this->get_parameter("lidar_verbosity").as_int();
+    double hori_fov = this->get_parameter("horizontal_fov").as_double();
+    double vert_fov = this->get_parameter("vertical_fov").as_double();
+    double angle_space = this->get_parameter("pulse_angle_space").as_double();
+    int scan_lines = this->get_parameter("scan_lines").as_int();
+    int verbose_param = this->get_parameter("verbosity").as_int();
 
     int scan_lines_down = scan_lines / 2;
     int scan_lines_up = scan_lines - scan_lines_down;

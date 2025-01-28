@@ -41,7 +41,7 @@ def generate_launch_description():
         parameter=[config]
     )
 
-    pwm_controller_node = Node(
+    kinematics_node = Node(
         package='ilumo_description',
         executable='ilumo_kinematics',
         name='kinematics',
@@ -52,5 +52,6 @@ def generate_launch_description():
         stereo_camera_node,
         lidar_node,
         thermal_camera_node,
-        pwm_controller_node
+        pwm_controller_node,
+        kinematics_node
     ])

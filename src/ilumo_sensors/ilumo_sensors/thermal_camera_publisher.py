@@ -33,9 +33,9 @@ class ThermalCameraPublisher(Node):
                                                  integer_range = IntegerRange(from_value = 0,
                                                                               to_value = 3))
 
-        self.declare_parameter('thermal_camera_fps', 15, fps_param_descriptor)
-        self.declare_parameter('thermal_camera_updown', True, updown_param_descriptor)
-        self.declare_parameter('thermal_camera_verbosity', 2, logging_param_desc)
+        self.declare_parameter('fps', 15, fps_param_descriptor)
+        self.declare_parameter('updown', True, updown_param_descriptor)
+        self.declare_parameter('verbosity', 2, logging_param_desc)
 
         self.get_logger().info(f'Starting thermal camera node ...')
 
@@ -56,7 +56,7 @@ class ThermalCameraPublisher(Node):
         self.get_logger().info(f'Connected to thermal camera at port {connected_port}.')
 
         # Set thermal camera parameters
-        stream_fps = self.get_parameter('thermal_camera_fps').get_parameter_value().integer_value
+        stream_fps = self.get_parameter('fps').get_parameter_value().integer_value
         self.mi48.set_fps(stream_fps)
         self.last_img_ts = 0
 
@@ -108,7 +108,7 @@ class ThermalCameraPublisher(Node):
             self.get_logger().error('Thermal camera received NONE data instead of GFRA')
             return
 
-        updown = self.get_parameter('thermal_camera_updown').get_parameter_value().bool_value
+        updown = self.get_parameter('updown').get_parameter_value().bool_value
 
         if updown:
             frame = np.flip(data_to_frame(data, (80,62), hflip=False), 0)

@@ -27,7 +27,8 @@ private:
     std::shared_ptr<tf2_ros::StaticTransformBroadcaster> lidar_side_tf_broadcaster_;
     std::shared_ptr<tf2_ros::StaticTransformBroadcaster> lidar_bottom_tf_broadcaster_;
     std::shared_ptr<tf2_ros::StaticTransformBroadcaster> thermal_camera_tf_broadcaster_;
-    std::unique_ptr<tf2_ros::TransformBroadcaster> external_connector_tf_broadcaster_;
+    std::shared_ptr<tf2_ros::StaticTransformBroadcaster> external_connector_tf_broadcaster_;
+    std::unique_ptr<tf2_ros::TransformBroadcaster> external_connector_tf_broadcaster_dynamic_;
 
     geometry_msgs::msg::TransformStamped stereo_camera_top_tf_stamped_;
     geometry_msgs::msg::TransformStamped stereo_camera_bottom_tf_stamped_;

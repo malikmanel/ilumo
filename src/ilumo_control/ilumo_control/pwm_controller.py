@@ -3,7 +3,7 @@
 
 import rclpy
 from rclpy.node import Node
-from rcl_interfaces.msg import ParameterDescriptor, IntegerRange, FloatingPointRange
+from rcl_interfaces.msg import ParameterDescriptor, IntegerRange
 
 from ilumo_interfaces.srv import SetLedBrightness, SetMotorSpeed
 
@@ -12,16 +12,6 @@ import Jetson.GPIO as GPIO
 class PMWController(Node):
     def __init__(self):
         super().__init__("pwm_controller")
-
-        motor_vel_param_descriptor = ParameterDescriptor(name = "Motor Velocity",
-                                                   type = 3, # Integer
-                                                   description = 'Motor velocity in rpm. Assumes no load. (default=off)', 
-                                                   integer_range = FloatingPointRange(from_value = 0.0,
-                                                                                      to_value = 8.0))
-        
-        motor_forw_param_descriptor = ParameterDescriptor(name = "Motor Forward",
-                                                          type = 1, # Bool
-                                                          description = 'Enable for motor to move forward, otherwise backwards (default=True).')
         
         led_lumen_param_descriptor = ParameterDescriptor(name = "LED Brightness",
                                                          type = 2, # Integer
@@ -29,8 +19,6 @@ class PMWController(Node):
                                                          integer_range = IntegerRange(from_value = 0,
                                                                                       to_value = 1005))
 
-        self.declare_parameter('motor_velocity', 0.0, motor_vel_param_descriptor)
-        self.declare_parameter('motor_forward', True, motor_forw_param_descriptor)
         self.declare_parameter('led_brightness', 800, led_lumen_param_descriptor)
 
         # Set the mode of numbering the pins.
