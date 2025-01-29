@@ -42,10 +42,10 @@ link_libraries(
 )
 
 add_library(
-    ${PROJECT_NAME} 
+  ${PROJECT_NAME} 
 
-    src/sensorcapture.cpp
-    src/videocapture.cpp
+  src/sensorcapture.cpp
+  src/videocapture.cpp
 )
 
 target_include_directories(zed_open_capture

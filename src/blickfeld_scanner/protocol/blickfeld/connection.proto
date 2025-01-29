@@ -1,0 +1,368 @@
+syntax = "proto2";
+option cc_enable_arenas = true;
+
+import "blickfeld/options.proto";
+import "blickfeld/error.proto";
+import "blickfeld/common.proto";
+import "blickfeld/config/advanced.proto";
+import "blickfeld/config/product.proto";
+import "blickfeld/config/scan_pattern.proto";
+import "blickfeld/status/main.proto";
+import "blickfeld/stream/connection.proto";
+import "blickfeld/stream/event.proto";
+import "blickfeld/config/named_scan_pattern.proto";
+
+package blickfeld.protocol;
+
+/**
+ * This section describes the different requests a client can send to the server.
+ * A request is always answered with a response. For every response, there is a request with the same name.
+ */
+message Request {
+
+	/**
+	 * This request is used for initial communication after connecting to a device and testing the established connection.
+	 */
+	message Hello {
+		optional uint32 protocol_version = 1;  // Version of the Blickfeld protocol
+		optional string library_version = 2 [ (regex)="[0-9]+\\.[0-9]+\\.[0-9]+[[:alnum:]\\.\\+\\-]*", (optional)=true ]; // <blockquote>Introduced in BSL v2.16 and firmware v1.17</blockquote>  Library version
+		optional Language language = 3 [ (optional)=true ]; // <blockquote>Introduced in BSL v2.16 and firmware v1.17</blockquote>  Library language
+	}
+
+	/**
+	 * Internal use only
+	 *
+	 * This request is used by internal proxy implementation to forward the correct ip address to the server.
+	 */
+	message ProxyHello {
+		optional string ip_address = 1 [ (regex) = "([0-9]{1,3}\\.){3}[0-9]{1,3}" ]; // IP address of the real client
+	}
+
+	/**
+	 * Internal use only
+	 */
+	message Developer {
+		extensions 1 to max;  // Internal developer requests
+		option (secure) = {permissions: DEVELOPER, cert_type: CLIENT};
+	}
+
+	/**
+	 * This request is used for setting a Scan Pattern.
+	 * A Scan Pattern can either be set by providing a Scan Pattern configuration or a name of a named Scan Pattern.
+	 */
+	message SetScanPattern {
+		reserved "legacy_config";
+		reserved 1;
+
+		oneof data {
+			config.ScanPattern config = 3;  // Refer to [ScanPattern](#blickfeld.protocol.config.ScanPattern)
+			string name = 4 [ (regex) = "[a-zA-Z0-9]([a-zA-Z0-9]|[_ \\-][a-zA-Z0-9])*"];  // Set named Scan Pattern, refer to [NamedScanPattern](#blickfeld.protocol.config.NamedScanPattern)
+		}
+
+		optional bool persist = 2 [default = false];  // Persists the scan pattern and sets it after a power cycle. Default: False
+	}
+
+	/**
+	 * This request is used to fill an empty or partially filled scan pattern with the required parameters.
+	 * It will fill the given scan pattern with default values and return the filled scan pattern to the client.
+	 * The filled scan pattern can then be set as input for  [Request.SetScanPattern](#blickfeld.protocol.Request.SetScanPattern).
+	 */
+	message FillScanPattern {
+		reserved "legacy_config";
+		reserved 1;
+
+		optional config.ScanPattern config = 2 [(allow_sparse)=true];  // Refer to [ScanPattern](#blickfeld.protocol.config.ScanPattern)
+	}
+
+	/**
+	 * This request is used to retrieve the currently set [ScanPattern](#blickfeld.protocol.config.ScanPattern).
+	 */
+	message GetScanPattern {
+	}
+
+	/**
+	 * This request is used for receiving the current [Status](#blickfeld.protocol.status.Status).
+	 */
+	message Status {
+	}
+
+	/**
+	 * > Introduced in BSL v2.10 and firmware v1.9
+	 *
+	 * This request triggers a self test of the device.
+	 * It validates the hardware, operates the device, and generates a report.
+	 * The report is currently only accessible by developers.
+	 */
+	message RunSelfTest {
+	}
+
+	/**
+	 * > Introduced in BSL v2.11 and firmware v1.11
+	 *
+	 * This request is used for configuring the advanced config.
+	 */
+	message SetAdvancedConfig {
+		optional config.Advanced config = 1;  // Refer to [Advanced](#blickfeld.protocol.config.Advanced)
+		optional bool persist = 2 [default = true];  // Persists the config and sets it after a power cycle. Default: True
+	}
+
+	/**
+	 * > Introduced in BSL v2.11 and firmware v1.11
+	 *
+	 * This request is used to retrieve the currently set [Advanced](#blickfeld.protocol.config.Advanced).
+	 */
+	message GetAdvancedConfig {
+	}
+
+	/**
+	 * > Introduced in BSL v2.13 and firmware v1.13
+	 *
+	 * This request can be used to attempt a re-initialization of the device if it is errored.
+	 * A self test is automatically triggered after a successful re-initialization.
+	 */
+	message AttemptErrorRecovery {
+	}
+
+	/**
+	 * > Introduced in BSL v2.14 and firmware v1.14
+	 *
+	 * This request returns a list of constraints which are applied on scan patterns.
+	 * The constraints define the constant and dynamic relationships between field values.
+	 * The constraints are equal for a device type and firmware, but might vary for firmware releases and device variants.
+	 * It is mainly used to visualize the constraints in the scan pattern configuration of the web gui.
+	 */
+	message GetScanPatternConstraints {
+	}
+
+	/**
+	 * > Introduced in BSL v2.15 and firmware v1.16
+	 *
+	 * This request returns a list of named scan patterns.
+	 */
+	message GetNamedScanPatterns {
+	}
+
+	/**
+	 * > Introduced in BSL v2.15 and firmware v1.16
+	 *
+	 * This request sets a named scan patterns.
+	 * The name has to be different of the default scan patterns and can only contain letters, numbers, space, underscore and minus.
+	 */
+	message StoreNamedScanPattern {
+		optional string name = 1 [ (regex) = "[a-zA-Z0-9]([a-zA-Z0-9]|[_ \\-][a-zA-Z0-9])*"];  // Name
+		optional config.ScanPattern config = 2 [(allow_sparse)=true]; // Refer to [ScanPattern](#blickfeld.protocol.config.ScanPattern)
+	}
+
+	/**
+	 * > Introduced in BSL v2.15 and firmware v1.16
+	 *
+	 * This request deletes a named scan pattern.
+	 * Default scan patterns can't be deleted.
+	 */
+	message DeleteNamedScanPattern {
+		optional string name = 1 [ (regex) = "[a-zA-Z0-9]([a-zA-Z0-9]|[_ \\-][a-zA-Z0-9])*"];  // Name
+	}
+
+	oneof data {
+		Hello hello = 11;  // Refer to [Request.Hello](#blickfeld.protocol.Request.Hello)
+		Developer developer = 13;  // Refer to [Request.Developer](#blickfeld.protocol.Request.Developer)
+		SetScanPattern set_scan_pattern = 15;  // Refer to [Request.SetScanPattern](#blickfeld.protocol.Request.SetScanPattern)
+		FillScanPattern fill_scan_pattern = 16;  // Refer to [Request.FillScanPattern](#blickfeld.protocol.Request.FillScanPattern)
+		GetScanPattern get_scan_pattern = 17;  // Refer to [Request.GetScanPattern](#blickfeld.protocol.Request.GetScanPattern)
+		stream.Subscribe subscribe = 18;  // Refer to [Subscribe](#blickfeld.protocol.stream.Subscribe)
+		Status status = 19;  // Refer to [Request.Status](#blickfeld.protocol.Request.Status)
+		RunSelfTest run_self_test = 20;  // Refer to [Request.RunSelfTest](#blickfeld.protocol.Request.RunSelfTest)
+		SetAdvancedConfig set_advanced_config = 21; // <blockquote>Introduced in BSL v2.11 and firmware v1.11</blockquote> Refer to [Request.SetAdvancedConfig](#blickfeld.protocol.Request.SetAdvancedConfig)
+		GetAdvancedConfig get_advanced_config = 22; // <blockquote>Introduced in BSL v2.11 and firmware v1.11</blockquote> Refer to [Request.GetAdvancedConfig](#blickfeld.protocol.Request.GetAdvancedConfig)
+		stream.Subscribe unsubscribe = 23; // <blockquote>Introduced in BSL v2.13 and firmware v1.13</blockquote> Unsubscribe a stream started with a [Subscribe](#blickfeld.protocol.stream.Subscribe) request.
+		AttemptErrorRecovery attempt_error_recovery = 24; // <blockquote>Introduced in BSL v2.13 and firmware v1.13</blockquote> Refer to [Request.AttemptErrorRecovery](#blickfeld.protocol.Request.AttemptErrorRecovery)
+		GetScanPatternConstraints get_scan_pattern_constraints = 25; // <blockquote>Introduced in BSL v2.14 and firmware v1.14</blockquote> Refer to [Request.GetScanPatternConstraints](#blickfeld.protocol.Request.GetScanPatternConstraints)
+		GetNamedScanPatterns get_named_scan_patterns = 26; // <blockquote>Introduced in BSL v2.15 and firmware v1.16</blockquote> Refer to [Request.GetNamedScanPatterns](#blickfeld.protocol.Request.GetNamedScanPatterns)
+		StoreNamedScanPattern store_named_scan_pattern = 27; // <blockquote>Introduced in BSL v2.15 and firmware v1.16</blockquote> Refer to [Request.StoreNamedScanPattern](#blickfeld.protocol.Request.StoreNamedScanPattern)
+		DeleteNamedScanPattern delete_named_scan_pattern = 28; // <blockquote>Introduced in BSL v2.15 and firmware v1.16</blockquote> Refer to [Request.DeleteNamedScanPattern](#blickfeld.protocol.Request.DeleteNamedScanPattern)
+		ProxyHello proxy_hello = 29; // <blockquote>Introduced in BSL v2.16 and firmware v1.17</blockquote> Refer to [Request.ProxyHello](#blickfeld.protocol.Request.ProxyHello)
+
+		string _asJSON = 100; // Internal use only
+	}
+
+	optional Format accept_format = 101 [default = PROTOBUF]; // Internal use only
+}
+
+/**
+ * This section describes the responses a client receives after sending a request to the server.
+ * For the request that corresponds to a given response, please refer to [Request](#blickfeld.protocol.Request).
+ * Each response has the same name as the request.
+ */
+message Response {
+	optional uint64 timestamp_ns = 1;  // Unit: [ns] - timestamp when the response is sent out
+
+	/**
+	 * This response is sent out after establishing a connection.
+	 */
+	message Hello {
+		optional uint32 protocol_version = 1;  // Version of the Blickfeld Protocol
+		optional string library_version = 2 [ (regex)="[0-9]+\\.[0-9]+\\.[0-9]+[[:alnum:]\\.\\+\\-]*" ]; // <blockquote>Introduced in BSL v2.16 and firmware v1.17</blockquote> Library version
+		optional Language language = 3; // <blockquote>Introduced in BSL v2.16 and firmware v1.17</blockquote> Library language
+		optional config.Product product = 4 [(optional)=true]; // <blockquote>Introduced in BSL v2.16 and firmware v1.17</blockquote> Refer to [Product](#blickfeld.protocol.config.Product).
+
+		oneof oneof_serial_number {
+			option (optional_one_of) = true;
+			string serial_number = 5 [ (regex) = "[A-Z2-7]{9}", (legacy_field_id)=6 ]; // <blockquote>Introduced in BSL v2.16 and firmware v1.17</blockquote> Cube serial number
+			string legacy_serial_number = 6 [ (regex) = "msb-[0-9]{4}", deprecated=true ]; // <blockquote>Introduced in BSL v2.16 and firmware v1.17</blockquote> Deprecated legacy serial number
+		}
+
+		/**
+		 * > Introduced in BSL v2.16 and firmware v1.17
+		 *
+		 * Contains all firmware names, versions, and revisions.
+		 */
+		message Firmware {
+			optional SoftwareVersion version = 1; // Baseline version of firmware. Refer to [SoftwareVersion](#blickfeld.protocol.SoftwareVersion).
+			map<string, SoftwareVersion> module_versions = 2; // Version of software modules. The key of the map is the name and the object is the [SoftwareVersion](#blickfeld.protocol.SoftwareVersion).
+		}
+
+		optional Firmware firmware = 7; // <blockquote>Introduced in BSL v2.16 and firmware v1.17</blockquote> Refer to [Firmware](#blickfeld.protocol.Response.Hello.Firmware).
+		map<string, HardwareModule> hardware_modules = 8; // <blockquote>Introduced in BSL v2.16 and firmware v1.17</blockquote> Hardware module map, where the key is the name and the object is the [HardwareModule](#blickfeld.protocol.HardwareModule).
+	}
+
+	/**
+	 * Internal use only
+	 */
+	message ProxyHello {
+	}
+
+	/**
+	 * Internal use only
+	 */
+	message Developer {
+		extensions 1 to max;  // Internal developer responses
+	}
+
+	/**
+	 * This response is sent out after setting a scan pattern.
+	 */
+	message SetScanPattern {
+	}
+
+	/**
+	 * This response is given after a request to fill a sparse [ScanPattern](#blickfeld.protocol.config.ScanPattern) has been transmitted.
+	 * It returns a scan pattern, the unset fields are filled with default values.
+	 */
+	message FillScanPattern {
+		reserved "legacy_config";
+		reserved 1;
+
+		optional config.ScanPattern config = 2;  // Refer to [ScanPattern](#blickfeld.protocol.config.ScanPattern)
+	}
+
+	/**
+	 * This response is returned after a request to get the current [ScanPattern](#blickfeld.protocol.config.ScanPattern).
+	 */
+	message GetScanPattern {
+		reserved "legacy_config";
+		reserved 1;
+
+		optional config.ScanPattern config = 2;  // Refer to [ScanPattern](#blickfeld.protocol.config.ScanPattern)
+	}
+
+	/**
+	 * > Introduced in BSL v2.10 and firmware v1.9
+	 *
+	 * This response is returned after a self test.
+	 * The success flag indicates if the hardware is fully operational.
+	 * The generated report is currently only accessible by developers.
+	 */
+	message RunSelfTest {
+		optional bool success = 1;
+		extensions 2;
+	}
+
+	/**
+	 * > Introduced in BSL v2.11 and firmware v1.11
+	 *
+	 * This response is sent out after setting an SetAdvancedConfig.
+	 */
+	message SetAdvancedConfig {
+	}
+
+	/**
+	 * > Introduced in BSL v2.11 and firmware v1.11
+	 *
+	 * This response is returned after a request to get the current [Advanced](#blickfeld.protocol.config.Advanced).
+	 */
+	message GetAdvancedConfig {
+		optional config.Advanced config = 1;  // Refer to [Advanced](#blickfeld.protocol.config.Advanced)
+	}
+
+	/**
+	 * > Introduced in BSL v2.13 and firmware v1.13
+	 *
+	 * This response is sent out after sending AttemptErrorRecovery.
+	 */
+	message AttemptErrorRecovery {
+	}
+
+	/**
+	 * > Introduced in BSL v2.14 and firmware v1.14
+	 *
+	 * This response is sent out after sending GetScanPatternConstraints.
+	 */
+	message GetScanPatternConstraints {
+		repeated Constraint constraints = 1; // List of constraints which apply for scan patterns.
+	}
+
+	/**
+	 * > Introduced in BSL v2.15 and firmware v1.16
+	 *
+	 * This response is sent out after sending GetNamedScanPatterns.
+	 */
+	message GetNamedScanPatterns {
+		repeated config.NamedScanPattern configs = 1; // List of named scan patterns, refer to [NamedScanPattern](#blickfeld.protocol.config.NamedScanPattern)
+	}
+
+	/**
+	 * > Introduced in BSL v2.15 and firmware v1.16
+	 *
+	 * This response is sent out after sending StoreNamedScanPattern.
+	 */
+	message StoreNamedScanPattern {
+	}
+
+	/**
+	 * > Introduced in BSL v2.15 and firmware v1.16
+	 *
+	 * This response is sent out after sending DeleteNamedScanPattern.
+	 */
+	message DeleteNamedScanPattern {
+	}
+
+	oneof data {
+		Error error = 10;  // Refer to [Error](#blickfeld.protocol.Error)
+		Hello hello = 11;  // Refer to [Response.Hello](#blickfeld.protocol.Response.Hello)
+		Developer developer = 13;  // Refer to [Response.Developer](#blickfeld.protocol.Response.Developer)
+		SetScanPattern set_scan_pattern = 15;  // Refer to [Response.SetScanPattern](#blickfeld.protocol.Response.SetScanPattern)
+		FillScanPattern fill_scan_pattern = 16;  // Refer to [Response.FillScanPattern](#blickfeld.protocol.Response.FillScanPattern)
+		GetScanPattern get_scan_pattern = 17;  // Refer to [Response.GetScanPattern](#blickfeld.protocol.Response.GetScanPattern)
+		stream.Event event = 18;  // Refer to [Event](#blickfeld.protocol.stream.Event)
+		Status status = 19;  // Refer to [Response.Status](#blickfeld.protocol.Response.Status)
+		RunSelfTest run_self_test = 20; // Refer to [Response.RunSelfTest](#blickfeld.protocol.Response.RunSelfTest)
+		SetAdvancedConfig set_advanced_config = 21; // <blockquote>Introduced in BSL v2.11 and firmware v1.11</blockquote> Refer to [Response.SetAdvanced](#blickfeld.protocol.Response.SetAdvancedConfig)
+		GetAdvancedConfig get_advanced_config = 22; // <blockquote>Introduced in BSL v2.11 and firmware v1.11</blockquote> Refer to [Response.GetAdvanced](#blickfeld.protocol.Response.GetAdvancedConfig)
+		AttemptErrorRecovery attempt_error_recovery = 24; // <blockquote>Introduced in BSL v2.13 and firmware v1.13</blockquote> Refer to [Response.AttemptErrorRecovery](#blickfeld.protocol.Response.AttemptErrorRecovery)
+		GetScanPatternConstraints get_scan_pattern_constraints = 25; // <blockquote>Introduced in BSL v2.14 and firmware v1.14</blockquote> Refer to [Response.GetScanPatternConstraints](#blickfeld.protocol.Response.GetScanPatternConstraints)
+		GetNamedScanPatterns get_named_scan_patterns = 26; // <blockquote>Introduced in BSL v2.15 and firmware v1.16</blockquote> Refer to [Response.GetNamedScanPatterns](#blickfeld.protocol.Response.GetNamedScanPatterns)
+		StoreNamedScanPattern store_named_scan_pattern = 27; // <blockquote>Introduced in BSL v2.15 and firmware v1.16</blockquote> Refer to [Response.StoreNamedScanPattern](#blickfeld.protocol.Response.StoreNamedScanPattern)
+		DeleteNamedScanPattern delete_named_scan_pattern = 28; // <blockquote>Introduced in BSL v2.15 and firmware v1.16</blockquote> Refer to [Response.DeleteNamedScanPattern](#blickfeld.protocol.Response.DeleteNamedScanPattern)
+		ProxyHello proxy_hello = 29; // <blockquote>Introduced in BSL v2.16 and firmware v1.17</blockquote> Refer to [Response.ProxyHello](#blickfeld.protocol.Response.ProxyHello)
+
+		string _asJSON = 100; // Internal use only
+	}
+}
+
+/**
+ * The format type of response is an undocumented, internal feature required for the REST API.
+ */
+enum Format {
+	PROTOBUF = 1;
+	JSON = 2;
+}

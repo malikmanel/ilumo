@@ -1,0 +1,84 @@
+syntax = "proto2";
+
+import "blickfeld/options.proto";
+import "blickfeld/stream/connection.proto";
+
+package blickfeld.protocol.config;
+
+/**
+ * > Introduced in BSL v2.11 and firmware v1.11
+ *
+ * Expert parameters: It is not recommended to adapt this calibrated configuration without understanding the influences on the resulting point cloud quality.
+ *
+ * The current set of parameters is preliminary, additional parameters may be added or may get obsolete in the future.
+ */
+message Advanced {
+
+	/**
+	 * The behavior of the detector can be adjusted to improve the performance under extreme environmental conditions, e.g. static setup with strong daylight or basement rooms without daylight.
+	 */
+	message Detector {
+		optional float sensitivity = 1 [ default = 1, (d_min) = 0.8, (d_max) = 1.2 ]; // Relatively influences the sensitivity of the detector. Higher values might also result into range loss. It is recommended to validate the noise filter parameters after changes to this setting.
+	}
+
+	/**
+	 * > Introduced in BSL v2.12 and firmware v1.12
+	 *
+	 * Processing parameters are set at the factory after calibration. Changing these values invalidates the factory calibration.
+	 */
+	message Processing {
+		optional float range_offset = 1 [default = 0, (d_min) = -2, (d_max) = 2]; // in [m]
+		repeated float imu_static_rotation_offset = 2 [(length) = 9, (optional) = true, packed = true]; // <blockquote>Introduced in BSL v2.19 and firmware v1.20</blockquote> in [rad] - Offset rotation matrix for acceleration of IMU. Can be used to calibrate the accelerometer e.g. on a flat surface.
+		optional float horizontal_phase_offset = 3 [default = 0, (d_min) = -0.000032, (d_max) = 0.000032]; // <blockquote>Introduced in BSL v2.19.5 and firmware v1.21.1</blockquote> in [s] - Correction for phase offset in the horizontal field of view. This parameter might be adjusted in the field if the upper and lower half of the frame drifted horizontally.
+	}
+
+	/**
+	 * > Introduced in BSL v2.13 and firmware v1.13
+	 *
+	 * Parameters, which control the server behavior.
+	 */
+	message Server {
+		optional stream.Subscribe.PointCloud default_point_cloud_subscription = 1; // Overwrite default point cloud subscription. Can still be overridden with client requests.
+	}
+
+	/**
+	 * > Introduced in BSL v2.18 and firmware v1.19
+	 *
+	 * Activate or deactivate synchronization and change parameters
+	 */
+	message TimeSynchronization {
+		/**
+		 * The Blickfeld devices can use an NTPv4 client to synchronize the local device time to a time server.
+		 * NTP can achieve synchronization accuracy below one millisecond for measurement results in local networks.
+		 */
+		message NTP {
+			repeated string servers = 1 [ (optional)=true, (regex) = "[[:alnum:]\\.\\-]+" ]; // Specify list of NTP server. By default, debian pool NTP servers are used.
+		}
+
+		/**
+		 * The Blickfeld devices can use a PTP client to synchronize the local device time to a time server.
+		 * PTP can achieve an higher accuracy than NTP in local networks.
+		 */
+		message PTP {
+			enum DelayMechanism {
+				E2E = 1;  // End to end delay detection
+				P2P = 2;  // Peer to peer delay detection
+			}
+
+			optional uint32 domain = 1 [default=0];  // PTP domain number.
+			optional DelayMechanism delay_mechanism = 2 [default=E2E];  // Delay detection mode used
+			repeated string unicast_destinations = 3 [ (optional) = true, (regex) = "[[:alnum:]\\.\\-]+" ]; // Specify unicast slave addresses for unicast master operation, or unicast master addresses for slave operation. If this is set unicast mode will be activated.
+		}
+
+		oneof kind {
+			option (optional_one_of) = true;
+			NTP ntp = 1;  // If this field is set, NTP synchronization is activated, which is the default configuration. Refer to [NTP](#blickfeld.protocol.config.Advanced.Synchronization.NTP)
+			PTP ptp = 2;  // If this field is set, PTP synchronization is activated and NTP synchronization is deactivated. Refer to [PTP](#blickfeld.protocol.config.Advanced.Synchronization.PTP)
+		}
+	}
+
+	optional Detector detector = 1; // Refer to [Detector](#blickfeld.protocol.config.Advanced.Detector)
+	optional Processing processing = 2; // <blockquote>Introduced in BSL v2.12 and firmware v1.12</blockquote> Refer to [Processing](#blickfeld.protocol.config.Advanced.Processing)
+	optional Server server = 3; // <blockquote>Introduced in BSL v2.13 and firmware v1.13</blockquote> Refer to [Server](#blickfeld.protocol.config.Advanced.Server)
+	optional TimeSynchronization time_synchronization = 4; // <blockquote>Introduced in BSL v2.18 and firmware v1.19</blockquote> Refer to [TimeSynchronization](#blickfeld.protocol.config.Advanced.TimeSynchronization)
+}
