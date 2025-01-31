@@ -17,7 +17,7 @@ find_package(cv_bridge REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(zed_open_capture REQUIRED)
-find_package(blickfeld-scanner REQUIRED)
+find_package(blickfeld REQUIRED)
 find_package(ilumo_interfaces REQUIRED)
 find_package(Protobuf REQUIRED)
 
@@ -27,7 +27,7 @@ include_directories(
 
 add_executable(lidar_publisher src/lidar_publisher.cpp)
 ament_target_dependencies(lidar_publisher 
-  rclcpp std_msgs sensor_msgs blickfeld-scanner ilumo_interfaces Protobuf)
+  rclcpp std_msgs sensor_msgs blickfeld ilumo_interfaces Protobuf)
 
 add_executable(stereo_camera_publisher src/stereo_camera_publisher.cpp)
 ament_target_dependencies(stereo_camera_publisher 

@@ -7,7 +7,7 @@
 #include <sensor_msgs/msg/temperature.hpp>
 #include "ilumo_interfaces/msg/imu_burst.hpp"
 
-#include <blickfeld/scanner.h>
+#include <blickfeld_scanner/scanner.h>
 
 class LiDARPublisher : public rclcpp::Node
 {

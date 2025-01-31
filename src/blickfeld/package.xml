@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>blickfeld_scanner</name>
+  <name>blickfeld</name>
   <version>0.0.0</version>
   <description>Taken from https://github.com/Blickfeld/blickfeld-scanner-lib</description>
   <maintainer email="m.hashim@campus.tu-berlin.de">Malik-Manel Hashim</maintainer>
