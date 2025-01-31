@@ -17,7 +17,7 @@
   <depend>sensor_msgs</depend>
   <depend>ilumo_interfaces</depend>
   <depend>zed_open_capture</depend>
-  <depend>blickfeld-scanner</depend>
+  <depend>blickfeld</depend>
 
   <exec_depend>senxor</exec_depend>
 

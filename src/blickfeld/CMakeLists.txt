@@ -50,7 +50,7 @@ set(DEFAULT_LOG_MSGS_KEPT_IN_MEM 50)
 
 # Set lib include directories
 set (LIBINCLUDEDIR "include/blickfeld")
-set (LIBINCLUDEDIR_TOP "${PROJECT_BINARY_DIR}/include")
+set (LIBINCLUDEDIR_TOP "${CMAKE_INSTALL_INCLUDEDIR}")
 
 # Protobuf
 find_package(Protobuf 3.0.0 REQUIRED)
@@ -98,7 +98,7 @@ else()
   set(HAVE_OPENSSL OFF)
 endif()
 
-configure_file("${PROJECT_SOURCE_DIR}/include/blickfeld/scanner-config.h.in" "${PROJECT_BINARY_DIR}/include/blickfeld/scanner-config.h")
+configure_file("${PROJECT_SOURCE_DIR}/include/blickfeld/scanner-config.h.in" "${CMAKE_INSTALL_INCLUDEDIR}/blickfeld/scanner-config.h")
 
 # Sources and includes
 set(BLICKFELD_SCANNER_SOURCES
@@ -123,7 +123,6 @@ set(BLICKFELD_SCANNER_INCLUDES
   src
   thirdparty/portable_endian
   thirdparty/asio/include
-  ${PROJECT_BINARY_DIR}/include
 )
 
 include_directories(${BLICKFELD_SCANNER_INCLUDES})
@@ -162,17 +161,6 @@ find_package(Threads REQUIRED)
 target_link_libraries(${PROJECT_NAME} INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(${PROJECT_NAME}-static INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
-
-# Install BSL
-install(
-  TARGETS ${PROJECT_NAME} 
-  EXPORT export_${PROJECT_NAME}
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include
-)
-
 # Install license
 install(
   FILES LICENSE.md
@@ -182,15 +170,25 @@ install(
 # Generated headers
 install(
   DIRECTORY include/
-  DESTINATION include/${PROJECT_NAME}
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/blickfeld
   FILES_MATCHING PATTERN "*.h"
 )
 
 # Protocol file
 install(
   DIRECTORY ${PROJECT_SOURCE_DIR}/protocol/blickfeld/
-  DESTINATION lib/blickfeld/protocol/blickfeld
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/protocol/blickfeld
   FILES_MATCHING PATTERN "*.proto"
+)
+
+# Install BSL
+install(
+  TARGETS ${PROJECT_NAME} 
+  EXPORT export_${PROJECT_NAME}
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
 )
 
 ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
