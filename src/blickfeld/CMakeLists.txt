@@ -50,7 +50,7 @@ set(DEFAULT_LOG_MSGS_KEPT_IN_MEM 50)
 
 # Set lib include directories
 set (LIBINCLUDEDIR "include/blickfeld")
-set (LIBINCLUDEDIR_TOP "${CMAKE_INSTALL_INCLUDEDIR}")
+set (LIBINCLUDEDIR_TOP "${PROJECT_BINARY_DIR}/include") # TODO: Issue here
 
 # Protobuf
 find_package(Protobuf 3.0.0 REQUIRED)
@@ -98,7 +98,7 @@ else()
   set(HAVE_OPENSSL OFF)
 endif()
 
-configure_file("${PROJECT_SOURCE_DIR}/include/blickfeld/scanner-config.h.in" "${CMAKE_INSTALL_INCLUDEDIR}/blickfeld/scanner-config.h")
+configure_file("${PROJECT_SOURCE_DIR}/include/blickfeld/scanner-config.h.in" "${PROJECT_BINARY_DIR}/include/blickfeld/scanner-config.h")
 
 # Sources and includes
 set(BLICKFELD_SCANNER_SOURCES
