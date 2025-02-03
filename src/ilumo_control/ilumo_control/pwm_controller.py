@@ -13,6 +13,7 @@ class PMWController(Node):
     def __init__(self):
         super().__init__("pwm_controller")
         
+        # ----> Declare the parameters
         led_lumen_param_descriptor = ParameterDescriptor(name = "LED Brightness",
                                                          type = 2, # Integer
                                                          description = 'Total brightness of the LED lamps in lm. (default=800)', 
@@ -20,51 +21,45 @@ class PMWController(Node):
                                                                                       to_value = 1005))
 
         self.declare_parameter('led_brightness', 800, led_lumen_param_descriptor)
+        # <---- Declare the parameters
 
+        # ----> Prepare the pmw pins
         # Set the mode of numbering the pins.
         GPIO.setmode(GPIO.BOARD)
 
         # Motor pins
-        self.pwma = 32  # Speed control for motor A (PWM)
-        self.ai1 = 35  # Direction
-        self.ai2 = 37  # Direction
+        self.pwm1 = 32  # Speed control for motor (PWM)
+        self.pwm2 = 33  # Speed control for motor (PWM)
 
         # LED pins
-        self.pwmb = 33  # Brightness control for LED (PWM)
-        self.bi1 = 38  # Direction
-        self.bi2 = 40  # Direction
+        self.pwm3 = 33 # TODO: Find pin # Brightness control for LED (PWM)
 
         # Set up the pins
-        GPIO.setup(self.pwma, GPIO.OUT)
-        GPIO.setup(self.ai1, GPIO.OUT)
-        GPIO.setup(self.ai2, GPIO.OUT)
-        GPIO.setup(self.pwmb, GPIO.OUT)
-        GPIO.setup(self.bi1, GPIO.OUT)
-        GPIO.setup(self.bi2, GPIO.OUT)
+        GPIO.setup(self.pwm1, GPIO.OUT)
+        GPIO.setup(self.pwm2, GPIO.OUT)
+        GPIO.setup(self.pwm3, GPIO.OUT)
 
         # Set PWM frequency
-        self.pwm_motor = GPIO.PWM(self.pwma, 1000)  # Frequency in Hz
-        self.pwm_led = GPIO.PWM(self.pwmb, 1000)  # Frequency in Hz
+        self.pwm_motor1 = GPIO.PWM(self.pwm1, 15000)  # Frequency in Hz
+        self.pwm_motor2 = GPIO.PWM(self.pwm2, 15000)  # Frequency in Hz
+        self.pwm_led = GPIO.PWM(self.pwm3, 10000)  # Frequency in Hz
 
         # Start PWM
-        self.pwm_motor.start(0)
+        self.pwm_motor1.start(0)
+        self.pwm_motor2.start(0)
         self.pwm_led.start(0)
+        # <---- Prepare the pmw pins
 
-        # Turn on lights
+        # ----> Turn on lights
         initial_brightness = self.get_parameter('led_brightness').get_parameter_value().integer_value
         self.pwm_led.ChangeDutyCycle(initial_brightness/1005)
+        # <---- Turn on lights
 
-        if initial_brightness == 0:
-            GPIO.output(self.bi1, GPIO.LOW)
-            GPIO.output(self.bi2, GPIO.LOW)
-        else:
-            GPIO.output(self.bi1, GPIO.HIGH)
-            GPIO.output(self.bi2, GPIO.LOW)
-
-        # Create motor and led control services
+        # ----> Initialize motor and LED control services
         self.service_ = self.create_service(SetMotorSpeed, "set_motor_speed", self.motorControlCallback)
         self.service_ = self.create_service(SetLedBrightness, "set_led_brightness", self.ledControlCallback)
-        self.get_logger().info("PWM services ready")
+        self.get_logger().info("Motor and LED control services available.")
+        # <---- Initialize motor and LED control services
 
     def __del__(self):
         self.pwm_motor.stop()
@@ -73,40 +68,39 @@ class PMWController(Node):
 
 
     def motorControlCallback(self, req, res):
-        if req.speed > 10.0:
+        # ----> Motor speed limitation
+        if req.speed > 8.0:
+            req.speed = 8-0
             self.get_logger().warning(f'Requested motor speed exceeded limit of 8 rpm (requested {req.speed} rpm). Reduced to 8 rpm.')
-        self.pwm_motor.ChangeDutyCycle(duty_cycle_percent=req.speed/10)
+        # <---- Motor speed limitation
 
-        # TODO: set depending on motor controller
+        # ----> Changing motor PMW cycle
         if req.speed == 0:
-            GPIO.output(self.ai1, GPIO.LOW)
-            GPIO.output(self.ai2, GPIO.LOW)
+            self.pwm_motor1.ChangeDutyCycle(0)
+            self.pwm_motor2.ChangeDutyCycle(0)
         elif req.forward:
-            GPIO.output(self.ai1, GPIO.HIGH)
-            GPIO.output(self.ai2, GPIO.LOW)
+            self.pwm_motor1.ChangeDutyCycle(duty_cycle_percent=req.speed/10)
+            self.pwm_motor2.ChangeDutyCycle(0)
         else:
-            GPIO.output(self.ai1, GPIO.LOW)
-            GPIO.output(self.ai2, GPIO.HIGH)
+            self.pwm_motor1.ChangeDutyCycle(0)
+            self.pwm_motor2.ChangeDutyCycle(duty_cycle_percent=req.speed/10)
+        # <---- Changing motor PMW cycle
 
         res.success = True
-
         return res
     
     def ledControlCallback(self, req, res):
+        # ----> LED brightness limitation
         if req.brightness > 1005:
+            req.brightness = 1005
             self.get_logger().warning(f'Requested LED brightness exceeded limit of 1005 lm (requested {req.brightness} lm). Reduced to 1005 lm.')
+        # <---- LED brightness limitation
+        
+        # ----> Changing LED PMW cycle
         self.pwm_led.ChangeDutyCycle(req.brightness/1005)
-
-        # TODO: set depending on motor controller
-        if req.brightness == 0:
-            GPIO.output(self.bi1, GPIO.LOW)
-            GPIO.output(self.bi2, GPIO.LOW)
-        else:
-            GPIO.output(self.bi1, GPIO.HIGH)
-            GPIO.output(self.bi2, GPIO.LOW)
+        # <---- Changing LED PMW cycle
 
         res.success = True
-
         return res
 
 def main():

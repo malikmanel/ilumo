@@ -87,9 +87,12 @@ def connect_senxor(src=None, name=None):
             ser = Serial(p.device)
             usb = USB_Interface(ser)
             connected_port = p
-            if name is None: name = connected_port
+            if name is None: name = p.description
             mi48 = MI48([usb,usb], name=name, read_raw=False)
-    return mi48, connected_port, port_names
+
+            return mi48, connected_port, port_names
+    
+    return None, None, None
 
 def data_to_frame(data, array_shape, hflip=False):
     """

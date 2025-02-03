@@ -273,9 +273,12 @@ void LiDARPublisher::pointcloudCallback(std::shared_ptr<blickfeld::scanner::poin
                                         sensor_msgs::msg::PointCloud2::SharedPtr point_cloud_msg,
                                         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr point_cloud_pub_)
 {
+    // ----> Get LiDAR pointcloud frame 
     const blickfeld::protocol::data::Frame frame = point_cloud_stream->recv_frame();
     // TODO This "blocks" if no frame available. What does this mean? If we wait until next frame we completely fuck up our Reentrant callback group
+    // <---- Get LiDAR pointcloud frame 
 
+    // ----> LiDAR pointcloud debug information
     RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(9) << "Point cloud timestamp (" 
                                       << point_cloud_msg->header.frame_id << "): " 
                                       << static_cast<double>(frame.start_time_ns())/1e9<< " sec" );
@@ -288,22 +291,24 @@ void LiDARPublisher::pointcloudCallback(std::shared_ptr<blickfeld::scanner::poin
             RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(frame.start_time_ns()-last_pc_bottom_ts) << " Hz]");
         last_pc_bottom_ts = frame.start_time_ns();
     }
+    // <---- LiDAR pointcloud debug information
 
+    // ----> Prepare point cloud messages
+    // Calculate and reserve required memory
     const auto number_of_points = frame.total_number_of_returns(); // change to total_number_of_points if we ignore returns
-
-    /// reserve memory
     point_cloud_msg->data.resize(number_of_points * point_cloud_msg->point_step);
 
-    /// set point cloud message data
+    // set point cloud message data
     point_cloud_msg->header.stamp.sec = frame.start_time_ns() / 1000000000;
     point_cloud_msg->header.stamp.nanosec = frame.start_time_ns() % 1000000000;
     point_cloud_msg->is_dense = false;
     point_cloud_msg->height = 1;
     point_cloud_msg->width = number_of_points;
     point_cloud_msg->row_step = point_cloud_msg->point_step * point_cloud_msg->width;
+    // <---- Prepare point cloud messages
 
+    // ----> Fill point cloud message
     int point_index = 0;
-
 	// Iterate through all the scanlines in a frame
     for (int s_ind = 0; s_ind < frame.scanlines_size(); s_ind++) {
 
@@ -313,11 +318,10 @@ void LiDARPublisher::pointcloudCallback(std::shared_ptr<blickfeld::scanner::poin
             auto time_offset = frame.scanlines(s_ind).start_offset_ns() + point.start_offset_ns();
 
             // Iterate through all the returns for each points
-            // this might not be necessary, maybe the first return is enough
             for (int r_ind = 0; r_ind < point.returns_size(); r_ind++) {
                 auto& ret = point.returns(r_ind);
 
-                // also relevant: ret.intensity()
+                // Set coordinates, intensity, ambient ligh, time and id for each point
                 point_cloud_msg->data[point_index * point_cloud_msg->point_step + point_cloud_msg->fields[0].offset] = ret.cartesian(0);
                 point_cloud_msg->data[point_index * point_cloud_msg->point_step + point_cloud_msg->fields[1].offset] = ret.cartesian(0);
                 point_cloud_msg->data[point_index * point_cloud_msg->point_step + point_cloud_msg->fields[2].offset] = ret.cartesian(0);
@@ -331,8 +335,11 @@ void LiDARPublisher::pointcloudCallback(std::shared_ptr<blickfeld::scanner::poin
             }
         }
     }
+    // <---- Fill point cloud message
 
+    // ----> Publish point cloud message
     point_cloud_pub_->publish(*point_cloud_msg);
+    // <---- Publish point cloud message
 }
 
 void LiDARPublisher::imuCallback(std::shared_ptr<blickfeld::imu_stream> imu_stream,
@@ -341,10 +348,13 @@ void LiDARPublisher::imuCallback(std::shared_ptr<blickfeld::imu_stream> imu_stre
                                  rclcpp::Publisher<ilumo_interfaces::msg::ImuBurst>::SharedPtr imu_burst_pub_,
                                  rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr avg_imu_pub_)
 {
+    // ----> Get LiDAR IMU data 
     const blickfeld::protocol::data::IMU data = imu_stream->recv_burst();
     // received as bursts of data, so a lower frequency is possible. how do I know how large a burst is?
     // TODO This "blocks" if no frame available. What does this mean? If we wait until next frame we completely fuck up our Reentrant callback group
+    // <---- Get LiDAR IMU data 
 
+    // ----> LiDAR IMU debug information
     RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(9) << "IMU data timestamp (" 
                                       << avg_imu_msg.header.frame_id << "): " 
                                       << static_cast<double>(data.start_time_ns())/1e9<< " sec" );
@@ -357,7 +367,9 @@ void LiDARPublisher::imuCallback(std::shared_ptr<blickfeld::imu_stream> imu_stre
             RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(data.start_time_ns()-last_imu_bottom_ts) << " Hz]");
         last_pc_bottom_ts = data.start_time_ns();
     }
+    // <---- LiDAR IMU debug information
 
+    // ----> Setting message variables
     const auto number_of_samples = data.packed().length();
 
     auto burst_timestamp = data.start_time_ns();
@@ -367,7 +379,9 @@ void LiDARPublisher::imuCallback(std::shared_ptr<blickfeld::imu_stream> imu_stre
     float total_rx = 0.0;
     float total_ry = 0.0;
     float total_rz = 0.0;
+    // <---- Setting message variables
 
+    // ----> Preparing burst IMU message
     for (auto sample : data.samples()) {
         // Creating a single IMU msg
         auto single_imu_msg = ilumo_interfaces::msg::ImuSingle();
@@ -395,11 +409,11 @@ void LiDARPublisher::imuCallback(std::shared_ptr<blickfeld::imu_stream> imu_stre
         total_ay += sample.acceleration(1);
         total_az += sample.acceleration(2);
     }
+    // <---- Preparing burst IMU message
 
+    // ----> Preparing average IMU message
     // This assumes measurements at a constant frequency
-    // Otherwise next_timestamp - current time_stamp, but hard to get
-    // Maybe we could do current_timestamp - last_timestamp
-    // Direction of time should theoretically not matter
+    // Also possible: current_timestamp - last_timestamp (requires start timestamp)
 
     // Filling avg IMU message with data
     avg_imu_msg.header.stamp.sec = burst_timestamp / 1000000000;
@@ -410,10 +424,12 @@ void LiDARPublisher::imuCallback(std::shared_ptr<blickfeld::imu_stream> imu_stre
     avg_imu_msg.linear_acceleration.x = total_ax / number_of_samples;
     avg_imu_msg.linear_acceleration.y = total_ay / number_of_samples;
     avg_imu_msg.linear_acceleration.z = total_az / number_of_samples;
+    // <---- Preparing average IMU message
 
-    // Publishing messages
+    // ----> Publishing IMU messages
     imu_burst_pub_->publish(imu_burst_msg);
     avg_imu_pub_->publish(avg_imu_msg);
+    // <---- Publishing IMU messages
 }
 
 int main(int argc, char* argv[])

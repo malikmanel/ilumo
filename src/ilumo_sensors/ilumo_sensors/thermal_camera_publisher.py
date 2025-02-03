@@ -19,6 +19,7 @@ class ThermalCameraPublisher(Node):
     def __init__(self):
         super().__init__("thermal_camera_publisher")
 
+        # ----> Declare the parameters
         fps_param_descriptor = ParameterDescriptor(name = "Framerate",
                                                    type = 2, # Integer
                                                    description = 'Framerate of the thermal camera. (default=15)', 
@@ -31,17 +32,18 @@ class ThermalCameraPublisher(Node):
 
         self.declare_parameter('fps', 15, fps_param_descriptor)
         self.declare_parameter('updown', True, updown_param_descriptor)
+        # <---- Declare the parameters
 
         self.get_logger().info(f'Starting thermal camera node ...')
 
+        # ----> Create the publishers
         self.data_pub_ = self.create_publisher(ThermalImage, "thermal_camera/thermal_data", 10)
         self.img_pub_ = self.create_publisher(Image, "thermal_camera/image", 10)
         self.temp_pub_ = self.create_publisher(Temperature, "thermal_camera/sensor_temperature", 10)
+        # <---- Create the publishers
 
-        # Make an instance of the MI48, attaching USB for 
-        # both control and data interface.
-        # 'src=0' should refer to the first usb device with 
-        # vendor ID 1046 and product ID 45058 or 45088
+        # ----> Connect to thermal camera
+        # Attempts connection to first USB device with vendor ID 1046 and product ID 45058 or 45088
         try:
             self.mi48, connected_port, _ = connect_senxor()
         except SerialException:
@@ -50,11 +52,11 @@ class ThermalCameraPublisher(Node):
 
         if self.mi48 is None:
             self.get_logger().error('Connection to thermal camera failed.')
-            exit()
 
         self.get_logger().info(f'Connected to thermal camera at port {connected_port}.')
+        # <---- Connect to thermal camera
 
-        # Set thermal camera parameters
+        # ----> Set thermal camera parameters
         stream_fps = self.get_parameter('fps').get_parameter_value().integer_value
         self.mi48.set_fps(stream_fps)
         self.last_img_ts = 0
@@ -67,36 +69,45 @@ class ThermalCameraPublisher(Node):
 
         self.mi48.set_sens_factor(100)
         self.mi48.get_sens_factor()
+        # <---- Set thermal camera parameters
 
-        # initiate continuous frame acquisition
+        # ----> Start thermal video stream
         self.mi48.start(stream=True, with_header=True)
+        # <---- Start thermal video stream
 
-        # Prepare data message
+        # ----> Prepare thermal data message
         self.data_msg = ThermalImage()
         self.data_msg.header.frame_id = 'thermal_camera'
         self.data_msg.height = 62
         self.data_msg.width = 80 
         self.data_msg.step = 80*4
         self.data_msg.encoding = '32FC1'
+        # <---- Prepare thermal data message
 
-        # Prepare image message
+        # ----> Prepare thermal image message
         self.img_msg = Image()
         self.img_msg.header.frame_id = 'thermal_camera'
         self.img_msg.height = 62
         self.img_msg.width = 80 
         self.img_msg.step = 80 * 3
         self.img_msg.encoding = 'bgr8'
+        # <---- Prepare thermal image message
 
-        # Prepare temperature message
+        # ----> Prepare temperature message
         self.temp_msg = Temperature()
+        # <---- Prepare temperature message
         
-        # Create callback timer
+        # ----> Initialize publisher
         self.timer_ = self.create_timer(0.04, self.thermalcameraCallback)
+        # <---- Initialize publisher
 
     def thermalcameraCallback(self):
+        # ----> Get camera data and current timestamp
         data, header = self.mi48.read()
         timestamp = self.get_clock().now()
+        # <---- Get camera data and current timestamp
 
+        # ----> Thermal camera Debug information
         self.get_logger().debug(f"Thermal timestamp: {timestamp.nanoseconds/1e9}")
         if self.last_img_ts!=0:
             self.get_logger().debug(f" [{1e9/(timestamp.nanoseconds-self.last_img_ts)} Hz]")
@@ -106,7 +117,9 @@ class ThermalCameraPublisher(Node):
         if data is None:
             self.get_logger().error('Thermal camera received NONE data instead of GFRA')
             return
+        # <---- Thermal camera Debug information
 
+        # ----> Rotate image and prepare rgb version
         updown = self.get_parameter('updown').get_parameter_value().bool_value
 
         if updown:
@@ -115,7 +128,9 @@ class ThermalCameraPublisher(Node):
             frame = data_to_frame(data, (80,62), hflip=True)
 
         heatmap = cv2.applyColorMap(remap(frame), cv2.COLORMAP_JET)
+        # <---- Rotate image and prepare rgb version
 
+        # ----> Prepare image and data message
         bridge = CvBridge()
         cv_image = bridge.cv2_to_imgmsg(heatmap, encoding='bgr8')
 
@@ -127,10 +142,13 @@ class ThermalCameraPublisher(Node):
 
         self.temp_msg.temperature = header['senxor_temperature']
         self.temp_msg.header.stamp = timestamp.to_msg()
+        # <---- Prepare image and data messages
 
+        # ----> Publish messages
         self.data_pub_.publish(self.data_msg)
         self.img_pub_.publish(self.img_msg)
         self.temp_pub_.publish(self.temp_msg)
+        # <---- Publish messages
 
 
 def main():
