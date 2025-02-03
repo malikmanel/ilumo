@@ -15,16 +15,23 @@ An in-depth paragraph about your project and overview of use.
 
 ### Installing
 
-* How/where to download your program
-* Any modifications needed to be made to files/folders
+* Setup Jetson pins (If LED control/motor control is used)
+* Setup Zed 2 camera/Blickfeld LiDAR/wavewshare thermal camera
+* Clone repository
+* install dependencies: TODO
+* cd ilumo
+* ```colcon build```
+
 
 ### Executing program
 
-* How to run the program
-* Step-by-step bullets
-```
-code blocks for commands
-```
+* Open new terminal
+* . install/setup.bash TODO: not bash if other terminal is used
+* ros2 launch ilumo_startup ilumo.launch.py
+* or: ros2 run ilum_sensors lidar_publisher / stereo_camera_publisher / thermal_camera_publisher.py
+* or: ros2 run ilumo_control pwm_controller.py
+* Service calls for motor and LED
+* Enjoy cool robot
 
 ## Help
 
@@ -33,10 +40,11 @@ Any advise for common problems or issues.
 command to run if program contains helper info
 ```
 
-## Authors
+## Author
 
-Malik-Manel Hashim
-[TU-Berlin Mail](m.hashim@campus.tu-berlin.de)
+* Malik-Manel Hashim (they/them)
+* TU Berlin mail: m.hashim@campus.tu-berlin.de
+* [ResearchGate](https://www.researchgate.net/profile/Malik-Manel-Hashim)
 
 ## Version History
 
