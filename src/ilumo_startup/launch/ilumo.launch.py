@@ -17,21 +17,24 @@ def generate_launch_description():
         package='ilumo_sensors',
         executable='stereo_camera_publisher',
         name='stereo_camera',
-        parameters=[config]
+        parameters=[config],
+        arguments=['--ros-args', '--log-level', 'DEBUG']
     )
 
     lidar_node = Node(
         package='ilumo_sensors',
         executable='lidar_publisher',
         name='lidar',
-        parameters=[config]
+        parameters=[config],
+        arguments=['--ros-args', '--log-level', 'DEBUG']
     )
 
     thermal_camera_node = Node(
         package='ilumo_sensors',
         executable='thermal_camera_publisher.py',
         name='thermal_camera',
-        parameters=[config]
+        parameters=[config],
+        arguments=['--ros-args', '--log-level', 'DEBUG']
     )
 
     pwm_controller_node = Node(

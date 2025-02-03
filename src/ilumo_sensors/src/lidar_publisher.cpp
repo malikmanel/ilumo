@@ -95,7 +95,7 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
                                            .set__from_value(5)
                                            .set__to_value(400)};
 
-    // Stereo camera node logging
+    // LiDAR node logging
     auto logging_param_desc = rcl_interfaces::msg::ParameterDescriptor{};
     logging_param_desc.name = "Verbosity";
     logging_param_desc.type = 2; // Integer
@@ -128,13 +128,22 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
 
     // ----> Creating a connection to the device.
     // TODO: Set correct ip and error logging for failure
-    std::string side_scanner_ip_or_host = "192.168.26.2";
-    std::string bottom_scanner_ip_or_host = "cube1-bottom";
-    side_scanner = blickfeld::scanner::connect(side_scanner_ip_or_host);
-    //std::shared_ptr<blickfeld::scanner> bottom_scanner = blickfeld::scanner::connect(bottom_scanner_ip_or_host);
+    std::string side_scanner_ip = "192.168.26.2";
+    std::string bottom_scanner_ip = "192.168.26.3";
+    side_scanner = blickfeld::scanner::connect(side_scanner_ip);
+    // bottom_scanner = blickfeld::scanner::connect(bottom_scanner_ip);
+    if( False )
+    {
+        RCLCPP_ERROR(get_logger(), "Cannot open connection to the LiDAR (side).");
+    }
+     if( False )
+    {
+        RCLCPP_ERROR(get_logger(), "Cannot open connection to the LiDAR (bottom).");
+    }
 
-    RCLCPP_INFO_STREAM(get_logger(),"Connected to the Blickfeld sensor (side) at address " << side_scanner_ip_or_host);
-    RCLCPP_INFO_STREAM(get_logger(),"Connected to the Blickfeld sensor (bottom) at address " << bottom_scanner_ip_or_host);
+
+    RCLCPP_INFO_STREAM(get_logger(),"Connected to the LiDAR sensor (side) at address " << side_scanner_ip);
+    RCLCPP_INFO_STREAM(get_logger(),"Connected to the LiDAR sensor (bottom) at address " << bottom_scanner_ip);
     // <---- Creating a connection to the device.
 
     // ----> Set the scanner parameters
@@ -332,9 +341,7 @@ void LiDARPublisher::imuCallback(std::shared_ptr<blickfeld::imu_stream> imu_stre
                                  rclcpp::Publisher<ilumo_interfaces::msg::ImuBurst>::SharedPtr imu_burst_pub_,
                                  rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr avg_imu_pub_)
 {
-    std::cout << "YESH" << std::endl;
     const blickfeld::protocol::data::IMU data = imu_stream->recv_burst();
-    std::cout << "YESH" << std::endl;
     // received as bursts of data, so a lower frequency is possible. how do I know how large a burst is?
     // TODO This "blocks" if no frame available. What does this mean? If we wait until next frame we completely fuck up our Reentrant callback group
 

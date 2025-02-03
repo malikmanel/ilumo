@@ -2,7 +2,7 @@ stereo_camera_publisher:
   ros__parameters:
     resolution:         1     # 0 = VGA, 1 = HD720, 2 = HD1080, 3 = HD2K
     fps:                1     # 0 = 15fps, 1 = 30fps, 2 = 60fps, 3 = 100fps
-    verbosity:          2     # 0 = None, 1 = Error, 2 = Warning, 3 = Info
+    verbosity:          2     # 0 = None, 1 = Error, 2 = Warning, 3 = Info (only effects internal logging)
 
 lidar_publisher:
   ros__parameters:
@@ -10,13 +10,12 @@ lidar_publisher:
     vertical_fov:       20.0  # [5.0, 30.0]
     pulse_angle_space:  0.4   # [0.4, 1.0], defines horizontal sample resolution (degree)
     scan_lines:         350   # [5, 400], higher scan lines = lower frame rate
-    verbosity:          2     # 0 = None, 1 = Error, 2 = Warning, 3 = Info
+    verbosity:          2     # 0 = None, 1 = Error, 2 = Warning, 3 = Info (only effects internal logging)
 
 thermal_camera_publisher:
   ros__parameters:
     fps:                15    # [1, 25], usually only reaches ~12.5
     updown:             True  # required if thermal camera is upside down (USB port is up)
-    verbosity:          2     # 0 = None, 1 = Error, 2 = Warning, 3 = Info, doesn't do anything atm
 
 pwm_controller:
   ros__parameters:

@@ -2,7 +2,6 @@
 
 import time
 import os
-import logging
 import math
 import itertools
 from functools import partial
@@ -12,7 +11,7 @@ import numpy as np
 import cv2 as cv
 import cmapy
 from serial.tools import list_ports
-from serial import Serial, SerialException
+from serial import Serial
 from senxor.mi48 import MI48
 from senxor.interfaces import MI_VID, MI_PIDs, USB_Interface
 
@@ -85,14 +84,9 @@ def connect_senxor(src=None, name=None):
             port_names.append(port)
             if port_name is not None and port_name != port: continue
             if cam_index is not None and cam_index != len(port_names)-1: continue
-            try:
-                ser = Serial(p.device)
-            except SerialException:
-                # port already open
-                logging.warning(f'Could not connecto to {p.device}. This might mean access was denied. Try running: sudo chmod 666 {p.device}.')
-                continue
+            ser = Serial(p.device)
             usb = USB_Interface(ser)
-            connected_port = port
+            connected_port = p
             if name is None: name = connected_port
             mi48 = MI48([usb,usb], name=name, read_raw=False)
     return mi48, connected_port, port_names

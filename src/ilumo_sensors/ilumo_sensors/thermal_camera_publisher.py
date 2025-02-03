@@ -4,6 +4,8 @@ import cv2
 import numpy as np
 from cv_bridge import CvBridge
 
+from serial import SerialException
+
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, Temperature
@@ -26,16 +28,9 @@ class ThermalCameraPublisher(Node):
         updown_param_descriptor = ParameterDescriptor(name = "Upside Down",
                                                       type = 1, # Bool
                                                       description = 'Enable if thermal camera is upside down (USB port is up). (default=True)')
-        
-        logging_param_desc = ParameterDescriptor(name = "Verbosity",
-                                                 type = 2, # Integer
-                                                 description = 'Logging verbosity of the thermal camera node. 0 = None, 1 = Error, 2 = Warning, 3 = Info (default=2)', 
-                                                 integer_range = [IntegerRange(from_value = 0,
-                                                                               to_value = 3)])
 
         self.declare_parameter('fps', 15, fps_param_descriptor)
         self.declare_parameter('updown', True, updown_param_descriptor)
-        self.declare_parameter('verbosity', 2, logging_param_desc)
 
         self.get_logger().info(f'Starting thermal camera node ...')
 
@@ -47,7 +42,11 @@ class ThermalCameraPublisher(Node):
         # both control and data interface.
         # 'src=0' should refer to the first usb device with 
         # vendor ID 1046 and product ID 45058 or 45088
-        self.mi48, connected_port, _ = connect_senxor()
+        try:
+            self.mi48, connected_port, _ = connect_senxor()
+        except SerialException:
+            # port already open
+            self.get_logger().error(f'Could not connecto to {connected_port.description}. This might mean access was denied. Try running: sudo chmod 666 {connected_port.device}.')
 
         if self.mi48 is None:
             self.get_logger().error('Connection to thermal camera failed.')
