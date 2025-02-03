@@ -53,3 +53,4 @@ This project is licensed under the [NAME HERE] License - see the LICENSE.md file
 * [Zed Open Capture](https://github.com/stereolabs/zed-open-capture)
 * [Senxor](https://files.waveshare.com/wiki/Thermal-Camera-HAT/Thermal_camera_code.zip)
 * [Jetson PWM control](https://forums.developer.nvidia.com/t/pwm-not-functioning-on-pins-32-and-33/283373)
+* [Simple ReadMe](https://gist.github.com/DomPizzie/7a5ff55ffa9081f2de27c315f5018afc)
