@@ -57,7 +57,6 @@ find_package(Protobuf 3.0.0 REQUIRED)
 
 # Check version of protobuf
 if(PROTOBUF_FOUND AND Protobuf_PROTOC_EXECUTABLE)
-  message ("Found protobuf compiler: ${Protobuf_PROTOC_EXECUTABLE}")
   execute_process(COMMAND ${Protobuf_PROTOC_EXECUTABLE} --version OUTPUT_VARIABLE Protobuf_Compiler_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
   string(REGEX REPLACE "^libprotoc " "" Protobuf_Compiler_VERSION "${Protobuf_Compiler_VERSION}")
 
@@ -72,7 +71,6 @@ if(NOT (PROTOBUF_FOUND AND Protobuf_PROTOC_EXECUTABLE AND Protobuf_LIBRARY))
 endif()
 
 if(PROTOBUF_FOUND)
-  message("Full protobuf support active.")
   set(BSL_STANDALONE OFF)  # Set BSL standalone build on off. This will activate more features.
 else()
   message(FATAL_ERROR "Could not find suitable protobuf on this system.")
@@ -84,7 +82,6 @@ find_package(ament_cmake REQUIRED)
 find_package(ZLIB)
 if (ZLIB_FOUND)
 	set(BSL_RECORDING ON)
-	message("Found ZLIB. Recording and reading is enabled.")
 else()
 	set(BSL_RECORDING OFF)
 	message("Did not find ZLIB. Recording and reading is disabled.")

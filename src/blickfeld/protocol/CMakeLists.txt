@@ -14,7 +14,6 @@ project(blickfeld-protocol)
 find_program(NODEJS_EXECUTABLE NAMES node)
 	
 ## Protocol Buffers
-message("Existing protobuf compiler is used: ${Protobuf_PROTOC_EXECUTABLE}")
 set(Protobuf_PROTOC_EXECUTABLE ${Protobuf_PROTOC_EXECUTABLE} PARENT_SCOPE)
 
 # list .proto files here
