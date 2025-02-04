@@ -2,7 +2,7 @@ stereo_camera_publisher:
   ros__parameters:
     resolution:         1     # 0 = VGA, 1 = HD720, 2 = HD1080, 3 = HD2K
     fps:                1     # 0 = 15fps, 1 = 30fps, 2 = 60fps, 3 = 100fps
-    verbosity:          2     # 0 = None, 1 = Error, 2 = Warning, 3 = Info (only effects internal logging)
+    verbosity:          2     # 0 = None, 1 = Error, 2 = Warning, 3 = Info (only effects zed open capture logging)
 
 lidar_publisher:
   ros__parameters:
@@ -10,7 +10,6 @@ lidar_publisher:
     vertical_fov:       20.0  # [5.0, 30.0]
     pulse_angle_space:  0.4   # [0.4, 1.0], defines horizontal sample resolution (degree)
     scan_lines:         350   # [5, 400], higher scan lines = lower frame rate
-    verbosity:          2     # 0 = None, 1 = Error, 2 = Warning, 3 = Info (only effects internal logging)
 
 thermal_camera_publisher:
   ros__parameters:
@@ -19,11 +18,10 @@ thermal_camera_publisher:
 
 pwm_controller:
   ros__parameters:
-    led_brightness:     800   # [0, 1005] total brightness of the LED strips (lumen)
+    led_brightness:     800   # [0, 1005] initial brightness of the LED strips (lumen)
 
 ilumo_kinematics:
   ros__parameters:
-    dynamic_tf:         False # Enables dynamic calculation of the transform 
-                              # between ilumo_base and external_connector
-                              # using a published motor joint state.
-                              # (Motor state publishing not implemented, no sensor available)
+    dynamic_tf:         False # Enables dynamic calculation of the transform between ilumo_base 
+                              # and external_connector using a published motor joint state.
+                              # (Currently not implemented, as no sensor for motor joint state available)

@@ -132,11 +132,11 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     std::string bottom_scanner_ip = "192.168.26.3";
     side_scanner = blickfeld::scanner::connect(side_scanner_ip);
     // bottom_scanner = blickfeld::scanner::connect(bottom_scanner_ip);
-    if( False )
+    if( false )
     {
         RCLCPP_ERROR(get_logger(), "Cannot open connection to the LiDAR (side).");
     }
-     if( False )
+     if( false )
     {
         RCLCPP_ERROR(get_logger(), "Cannot open connection to the LiDAR (bottom).");
     }
@@ -153,7 +153,6 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     double vert_fov = this->get_parameter("vertical_fov").as_double();
     double angle_space = this->get_parameter("pulse_angle_space").as_double();
     int scan_lines = this->get_parameter("scan_lines").as_int();
-    int verbose_param = this->get_parameter("verbosity").as_int();
 
     int scan_lines_down = scan_lines / 2;
     int scan_lines_up = scan_lines - scan_lines_down;
