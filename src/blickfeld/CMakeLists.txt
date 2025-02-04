@@ -6,7 +6,6 @@
 ## LICENSE.md file in the root directory of this source tree.
 ##
 cmake_minimum_required (VERSION 3.8)
-project (blickfeld)
 
 if(NOT CMAKE_C_STANDARD)
   set(CMAKE_C_STANDARD 99)
@@ -15,6 +14,23 @@ if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
 endif()
 
+# Get version of BSL
+set(PROJECT_VERSION v2.20.6-30-g16ddc85)
+set(PROJECT_GIT_DESCRIBE v2.20.6-30-g16ddc858)
+
+string(REGEX REPLACE "^v([0-9.]+).*" "\\1" PROJECT_VERSION "${PROJECT_VERSION}")
+string(REGEX REPLACE "^v" "" PROJECT_GIT_DESCRIBE "${PROJECT_GIT_DESCRIBE}")
+string(REPLACE "." ";" VERSION_LIST ${PROJECT_VERSION})
+list(GET VERSION_LIST 0 BSL_VERSION_MAJOR)
+list(GET VERSION_LIST 1 BSL_VERSION_MINOR)
+list(GET VERSION_LIST 2 BSL_VERSION_PATCH)
+set(BSL_VERSION ${PROJECT_GIT_DESCRIBE})
+message("BSL Version ${PROJECT_GIT_DESCRIBE}")
+project (blickfeld
+	VERSION ${PROJECT_VERSION} 
+	DESCRIPTION "Blickfeld Scanner Library for controlling LiDAR devices of the Blickfeld GmbH"
+	HOMEPAGE_URL https://www.blickfeld.com
+)
 include(GNUInstallDirs)
 
 set(SERVER_PORT 8000)
@@ -199,3 +215,4 @@ if(BUILD_TESTING)
 endif()
 
 ament_package()
+message("${BSL_VERSION}")

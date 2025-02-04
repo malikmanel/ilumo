@@ -129,8 +129,10 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     // ----> Creating a connection to the device.
     // TODO: Set correct ip and error logging for failure
     std::string side_scanner_ip = "192.168.26.2";
-    std::string bottom_scanner_ip = "192.168.26.3";
+    // std::string bottom_scanner_ip = "192.168.26.3";
+    std::cout << "no" << std::endl;
     side_scanner = blickfeld::scanner::connect(side_scanner_ip);
+    std::cout << "yes" << std::endl;
     // bottom_scanner = blickfeld::scanner::connect(bottom_scanner_ip);
     if( false )
     {
@@ -141,14 +143,15 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
         RCLCPP_ERROR(get_logger(), "Cannot open connection to the LiDAR (bottom).");
     }
 
-
+    std::cout << "1" << std::endl;
     RCLCPP_INFO_STREAM(get_logger(),"Connected to the LiDAR sensor (side) at address " << side_scanner_ip);
-    RCLCPP_INFO_STREAM(get_logger(),"Connected to the LiDAR sensor (bottom) at address " << bottom_scanner_ip);
+    // RCLCPP_INFO_STREAM(get_logger(),"Connected to the LiDAR sensor (bottom) at address " << bottom_scanner_ip);
     // <---- Creating a connection to the device.
 
     // ----> Set the scanner parameters
     blickfeld::protocol::config::ScanPattern scan_pattern;
 
+    std::cout << "2" << std::endl;
     double hori_fov = this->get_parameter("horizontal_fov").as_double();
     double vert_fov = this->get_parameter("vertical_fov").as_double();
     double angle_space = this->get_parameter("pulse_angle_space").as_double();
@@ -162,7 +165,7 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
 	scan_pattern.mutable_vertical()->set_scanlines_up(scan_lines_up); // Upramping phase (increase of vertical mirror movement to reach outer scanlines)
 	scan_pattern.mutable_vertical()->set_scanlines_down(scan_lines_down); // Upramping phase (decrease of vertical mirror movement to return to inner scanlines)
     scan_pattern.mutable_pulse()->set_angle_spacing(angle_space * (M_PI / 180.0));
-
+    std::cout << "yes3" << std::endl;
 	scan_pattern = side_scanner->fill_scan_pattern(scan_pattern);
 	side_scanner->set_scan_pattern(scan_pattern);
     //bottom_scanner->set_scan_pattern(scan_pattern);
@@ -171,7 +174,7 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     // ----> Create a pointcloud stream object to receive pointclouds
 	side_point_cloud_stream = side_scanner->get_point_cloud_stream();
     side_imu_stream = side_scanner->get_imu_stream();
-
+    std::cout << "yes4" << std::endl;
     //bottom_point_cloud_stream = side_scanner->get_point_cloud_stream();
     //bottom_imu_stream = bottom_scanner->get_imu_stream();
     // <---- Create a pointcloud stream object to receive pointclouds
@@ -272,6 +275,7 @@ void LiDARPublisher::pointcloudCallback(std::shared_ptr<blickfeld::scanner::poin
                                         sensor_msgs::msg::PointCloud2::SharedPtr point_cloud_msg,
                                         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr point_cloud_pub_)
 {
+    std::cout <<"pc chicken" << std::endl;
     // ----> Get LiDAR pointcloud frame 
     const blickfeld::protocol::data::Frame frame = point_cloud_stream->recv_frame();
     // TODO This "blocks" if no frame available. What does this mean? If we wait until next frame we completely fuck up our Reentrant callback group
@@ -347,6 +351,7 @@ void LiDARPublisher::imuCallback(std::shared_ptr<blickfeld::imu_stream> imu_stre
                                  rclcpp::Publisher<ilumo_interfaces::msg::ImuBurst>::SharedPtr imu_burst_pub_,
                                  rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr avg_imu_pub_)
 {
+    std::cout <<"imu chicken" << std::endl;
     // ----> Get LiDAR IMU data 
     const blickfeld::protocol::data::IMU data = imu_stream->recv_burst();
     // received as bursts of data, so a lower frequency is possible. how do I know how large a burst is?

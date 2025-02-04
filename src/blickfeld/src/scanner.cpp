@@ -260,8 +260,10 @@ std::shared_ptr<scanner::point_cloud_stream<protocol::data::frame_t> > scanner::
 void scanner::__hello(protocol::Response::Hello* hello) {
 	protocol::Request req;
 	protocol::Response resp;
+	auto chicken = "2.20.6-30";
+	std::cout << BSL_VERSION << std::endl;
 	req.mutable_hello()->set_protocol_version(scanner_connection::protocol_version);
-	req.mutable_hello()->set_library_version(BSL_VERSION);
+	req.mutable_hello()->set_library_version(chicken);
 	req.mutable_hello()->set_language(protocol::Language::CPP);
 	conn->send_request(req, resp);
 	hello->CopyFrom(resp.hello());
