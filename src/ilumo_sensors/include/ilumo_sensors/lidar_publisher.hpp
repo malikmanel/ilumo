@@ -42,8 +42,10 @@ private:
     rclcpp::TimerBase::SharedPtr bottom_point_cloud_timer_;
     rclcpp::TimerBase::SharedPtr bottom_imu_timer_;
 
-    rclcpp::CallbackGroup::SharedPtr side_callback_group;
-    rclcpp::CallbackGroup::SharedPtr bottom_callback_group;
+    rclcpp::CallbackGroup::SharedPtr side_point_cloud_callback_group;
+    rclcpp::CallbackGroup::SharedPtr side_imu_callback_group;
+    rclcpp::CallbackGroup::SharedPtr bottom_point_cloud_callback_group;
+    rclcpp::CallbackGroup::SharedPtr bottom_imu_callback_group;
 
     void pointcloudCallback(std::shared_ptr<blickfeld::scanner::point_cloud_stream<blickfeld::protocol::data::Frame>> point_cloud_stream,
                             sensor_msgs::msg::PointCloud2::SharedPtr point_cloud_msg,

@@ -23,6 +23,27 @@ void addPointCloudField(sensor_msgs::msg::PointCloud2::SharedPtr point_cloud_msg
     point_cloud_msg->point_step += sizeof(FieldT);
 }
 
+static inline int getPointCloud2FieldIndex(const sensor_msgs::msg::PointCloud2::SharedPtr point_cloud_msg, 
+                                           const std::string& field_name) {
+    for (size_t field_index = 0; field_index < point_cloud_msg->fields.size(); ++field_index) {
+      if (point_cloud_msg->fields[field_index].name == field_name) {
+        return static_cast<int>(field_index);
+      }
+    }
+    return -1;
+  };
+
+template <typename ValueT>
+void assignField(const sensor_msgs::msg::PointCloud2::SharedPtr point_cloud_msg, 
+                    size_t point_index, 
+                    std::string field_name, 
+                    const ValueT& value) {
+    uint32_t field_index = getPointCloud2FieldIndex(point_cloud_msg, field_name);
+    *reinterpret_cast<ValueT*>(
+        &point_cloud_msg->data[point_index * point_cloud_msg->point_step + point_cloud_msg->fields[field_index].offset]) =
+        static_cast<ValueT>(value);
+}
+
 void makePointCloudMessage(sensor_msgs::msg::PointCloud2::SharedPtr point_cloud_msg)
 {
     point_cloud_msg->point_step = 0;
@@ -45,10 +66,10 @@ void makePointCloudMessage(sensor_msgs::msg::PointCloud2::SharedPtr point_cloud_
                               "time_offset",
                               sensor_msgs::msg::PointField::FLOAT32);
     addPointCloudField<uint32_t>(point_cloud_msg, 
-                                 "return_id",
+                                 "point_id", 
                                  sensor_msgs::msg::PointField::UINT32);
     addPointCloudField<uint32_t>(point_cloud_msg, 
-                                 "point_id", 
+                                 "return_id",
                                  sensor_msgs::msg::PointField::UINT32);
 }
 
@@ -130,9 +151,7 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     // TODO: Set correct ip and error logging for failure
     std::string side_scanner_ip = "192.168.26.2";
     // std::string bottom_scanner_ip = "192.168.26.3";
-    std::cout << "no" << std::endl;
     side_scanner = blickfeld::scanner::connect(side_scanner_ip);
-    std::cout << "yes" << std::endl;
     // bottom_scanner = blickfeld::scanner::connect(bottom_scanner_ip);
     if( false )
     {
@@ -143,7 +162,6 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
         RCLCPP_ERROR(get_logger(), "Cannot open connection to the LiDAR (bottom).");
     }
 
-    std::cout << "1" << std::endl;
     RCLCPP_INFO_STREAM(get_logger(),"Connected to the LiDAR sensor (side) at address " << side_scanner_ip);
     // RCLCPP_INFO_STREAM(get_logger(),"Connected to the LiDAR sensor (bottom) at address " << bottom_scanner_ip);
     // <---- Creating a connection to the device.
@@ -151,7 +169,6 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     // ----> Set the scanner parameters
     blickfeld::protocol::config::ScanPattern scan_pattern;
 
-    std::cout << "2" << std::endl;
     double hori_fov = this->get_parameter("horizontal_fov").as_double();
     double vert_fov = this->get_parameter("vertical_fov").as_double();
     double angle_space = this->get_parameter("pulse_angle_space").as_double();
@@ -165,7 +182,7 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
 	scan_pattern.mutable_vertical()->set_scanlines_up(scan_lines_up); // Upramping phase (increase of vertical mirror movement to reach outer scanlines)
 	scan_pattern.mutable_vertical()->set_scanlines_down(scan_lines_down); // Upramping phase (decrease of vertical mirror movement to return to inner scanlines)
     scan_pattern.mutable_pulse()->set_angle_spacing(angle_space * (M_PI / 180.0));
-    std::cout << "yes3" << std::endl;
+
 	scan_pattern = side_scanner->fill_scan_pattern(scan_pattern);
 	side_scanner->set_scan_pattern(scan_pattern);
     //bottom_scanner->set_scan_pattern(scan_pattern);
@@ -174,7 +191,6 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     // ----> Create a pointcloud stream object to receive pointclouds
 	side_point_cloud_stream = side_scanner->get_point_cloud_stream();
     side_imu_stream = side_scanner->get_imu_stream();
-    std::cout << "yes4" << std::endl;
     //bottom_point_cloud_stream = side_scanner->get_point_cloud_stream();
     //bottom_imu_stream = bottom_scanner->get_imu_stream();
     // <---- Create a pointcloud stream object to receive pointclouds
@@ -211,10 +227,12 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     // ----> Set previous timestamps to calculate frequency
 
     // ----> Initialize publishers
-    side_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
-    //bottom_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+    side_point_cloud_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    side_imu_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    bottom_point_cloud_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    bottom_imu_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
-    side_point_cloud_timer_ = create_wall_timer(15ms, [this,
+    side_point_cloud_timer_ = create_wall_timer(10ms, [this,
                                                        &point_cloud_stream = this->side_point_cloud_stream, 
                                                        &point_cloud_msg = this->side_point_cloud_msg,
                                                        &point_cloud_pub_ = this->side_point_cloud_pub_]()
@@ -223,9 +241,9 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
                                                         point_cloud_msg,
                                                         point_cloud_pub_
                                                         ); },
-                                                side_callback_group
+                                                side_point_cloud_callback_group
                                                );
-    side_imu_timer_ = create_wall_timer(0.8ms, [this,
+    /*side_imu_timer_ = create_wall_timer(40ms, [this,
                                                 &imu_stream = this->side_imu_stream,
                                                 &imu_burst_msg = this->side_imu_burst_msg,
                                                 &avg_imu_msg = this->side_avg_imu_msg,
@@ -238,11 +256,11 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
                                                     imu_burst_pub_,
                                                     avg_imu_pub_
                                                 ); },
-                                        side_callback_group
-                                       );  
+                                        side_imu_callback_group
+                                       );  */
                                       
     /*
-    bottom_point_cloud_timer_ = create_wall_timer(15ms, [this,
+    bottom_point_cloud_timer_ = create_wall_timer(100ms, [this,
                                                          bottom_point_cloud_stream = this->bottom_point_cloud_stream, 
                                                          bottom_point_cloud_msg = this->bottom_point_cloud_msg,
                                                          bottom_point_cloud_pub_ = this->bottom_point_cloud_pub_]()
@@ -253,7 +271,7 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
                                                          ); },
                                                   bottom_callback_group
                                                  );
-    bottom_imu_timer_ = create_wall_timer(0.8ms, [this,
+    bottom_imu_timer_ = create_wall_timer(50ms, [this,
                                                   bottom_imu_stream = this->bottom_imu_stream,
                                                   bottom_imu_burst_msg = this->bottom_imu_burst_msg,
                                                   bottom_avg_imu_msg = this->bottom_avg_imu_msg,
@@ -275,10 +293,8 @@ void LiDARPublisher::pointcloudCallback(std::shared_ptr<blickfeld::scanner::poin
                                         sensor_msgs::msg::PointCloud2::SharedPtr point_cloud_msg,
                                         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr point_cloud_pub_)
 {
-    std::cout <<"pc chicken" << std::endl;
     // ----> Get LiDAR pointcloud frame 
     const blickfeld::protocol::data::Frame frame = point_cloud_stream->recv_frame();
-    // TODO This "blocks" if no frame available. What does this mean? If we wait until next frame we completely fuck up our Reentrant callback group
     // <---- Get LiDAR pointcloud frame 
 
     // ----> LiDAR pointcloud debug information
@@ -325,14 +341,14 @@ void LiDARPublisher::pointcloudCallback(std::shared_ptr<blickfeld::scanner::poin
                 auto& ret = point.returns(r_ind);
 
                 // Set coordinates, intensity, ambient ligh, time and id for each point
-                point_cloud_msg->data[point_index * point_cloud_msg->point_step + point_cloud_msg->fields[0].offset] = ret.cartesian(0);
-                point_cloud_msg->data[point_index * point_cloud_msg->point_step + point_cloud_msg->fields[1].offset] = ret.cartesian(0);
-                point_cloud_msg->data[point_index * point_cloud_msg->point_step + point_cloud_msg->fields[2].offset] = ret.cartesian(0);
-                point_cloud_msg->data[point_index * point_cloud_msg->point_step + point_cloud_msg->fields[3].offset] = ret.intensity();
-                point_cloud_msg->data[point_index * point_cloud_msg->point_step + point_cloud_msg->fields[4].offset] = point.ambient_light_level();
-                point_cloud_msg->data[point_index * point_cloud_msg->point_step + point_cloud_msg->fields[5].offset] = time_offset;
-                point_cloud_msg->data[point_index * point_cloud_msg->point_step + point_cloud_msg->fields[6].offset] = ret.id();
-                point_cloud_msg->data[point_index * point_cloud_msg->point_step + point_cloud_msg->fields[7].offset] = point.id();
+                assignField(point_cloud_msg, point_index, "x", ret.cartesian(0));
+                assignField(point_cloud_msg, point_index, "y", ret.cartesian(1));
+                assignField(point_cloud_msg, point_index, "z", ret.cartesian(2));
+                assignField(point_cloud_msg, point_index, "intensity", ret.intensity());
+                assignField(point_cloud_msg, point_index, "ambient_light", point.ambient_light_level());
+                assignField(point_cloud_msg, point_index, "time_offset", time_offset);
+                assignField(point_cloud_msg, point_index, "point_id", point.id());
+                assignField(point_cloud_msg, point_index, "return_id", ret.id());
 
                 point_index++;
             }
@@ -351,30 +367,27 @@ void LiDARPublisher::imuCallback(std::shared_ptr<blickfeld::imu_stream> imu_stre
                                  rclcpp::Publisher<ilumo_interfaces::msg::ImuBurst>::SharedPtr imu_burst_pub_,
                                  rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr avg_imu_pub_)
 {
-    std::cout <<"imu chicken" << std::endl;
     // ----> Get LiDAR IMU data 
     const blickfeld::protocol::data::IMU data = imu_stream->recv_burst();
-    // received as bursts of data, so a lower frequency is possible. how do I know how large a burst is?
-    // TODO This "blocks" if no frame available. What does this mean? If we wait until next frame we completely fuck up our Reentrant callback group
     // <---- Get LiDAR IMU data 
 
     // ----> LiDAR IMU debug information
     RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(9) << "IMU data timestamp (" 
-                                      << avg_imu_msg.header.frame_id << "): " 
-                                      << static_cast<double>(data.start_time_ns())/1e9<< " sec" );
+                                    << avg_imu_msg.header.frame_id << "): " 
+                                    << static_cast<double>(data.start_time_ns())/1e9<< " sec" );
     if (avg_imu_msg.header.frame_id == "lidar_side"){
         if(last_imu_side_ts!=0)
-            RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(data.start_time_ns()-last_imu_side_ts) << " Hz]");
+            RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(data.start_time_ns()-last_imu_side_ts)*50 << " Hz]");
         last_pc_side_ts = data.start_time_ns();
     } else if (avg_imu_msg.header.frame_id == "lidar_bottom") {
         if(last_imu_bottom_ts!=0)
-            RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(data.start_time_ns()-last_imu_bottom_ts) << " Hz]");
+            RCLCPP_DEBUG_STREAM(get_logger(), std::fixed << std::setprecision(1)  << " [" << 1e9/static_cast<float>(data.start_time_ns()-last_imu_bottom_ts)*50 << " Hz]");
         last_pc_bottom_ts = data.start_time_ns();
     }
     // <---- LiDAR IMU debug information
 
     // ----> Setting message variables
-    const auto number_of_samples = data.packed().length();
+    float number_of_samples = 0.0;
 
     auto burst_timestamp = data.start_time_ns();
     float total_ax = 0.0;
@@ -412,6 +425,9 @@ void LiDARPublisher::imuCallback(std::shared_ptr<blickfeld::imu_stream> imu_stre
         total_ax += sample.acceleration(0);
         total_ay += sample.acceleration(1);
         total_az += sample.acceleration(2);
+
+        // Tracking message amount
+        number_of_samples++;
     }
     // <---- Preparing burst IMU message
 
@@ -440,7 +456,6 @@ int main(int argc, char* argv[])
 {
     rclcpp::init(argc, argv);
     auto node = std::make_shared<LiDARPublisher>("lidar_publisher");
-    std::cout << "YESH" << std::endl;
     rclcpp::executors::MultiThreadedExecutor executor;
     executor.add_node(node);
     executor.spin();
