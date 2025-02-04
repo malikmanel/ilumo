@@ -32,7 +32,7 @@ class PMWController(Node):
         self.pwm2 = 33  # Speed control for motor (PWM)
 
         # LED pins
-        self.pwm3 = 33 # TODO: Find pin # Brightness control for LED (PWM)
+        self.pwm3 = 15 # TODO: Find pin # Brightness control for LED (PWM)
 
         # Set up the pins
         GPIO.setup(self.pwm1, GPIO.OUT)

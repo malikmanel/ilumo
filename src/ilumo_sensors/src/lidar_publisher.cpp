@@ -185,14 +185,14 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
 
 	scan_pattern = side_scanner->fill_scan_pattern(scan_pattern);
 	side_scanner->set_scan_pattern(scan_pattern);
-    //bottom_scanner->set_scan_pattern(scan_pattern);
+    bottom_scanner->set_scan_pattern(scan_pattern);
     // <---- Set the scanner parameters
 
     // ----> Create a pointcloud stream object to receive pointclouds
 	side_point_cloud_stream = side_scanner->get_point_cloud_stream();
     side_imu_stream = side_scanner->get_imu_stream();
-    //bottom_point_cloud_stream = side_scanner->get_point_cloud_stream();
-    //bottom_imu_stream = bottom_scanner->get_imu_stream();
+    bottom_point_cloud_stream = side_scanner->get_point_cloud_stream();
+    bottom_imu_stream = bottom_scanner->get_imu_stream();
     // <---- Create a pointcloud stream object to receive pointclouds
 
     // ----> Prepare LiDAR messages
@@ -232,7 +232,7 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     bottom_point_cloud_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
     bottom_imu_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
-    side_point_cloud_timer_ = create_wall_timer(10ms, [this,
+    side_point_cloud_timer_ = create_wall_timer(20ms, [this,
                                                        &point_cloud_stream = this->side_point_cloud_stream, 
                                                        &point_cloud_msg = this->side_point_cloud_msg,
                                                        &point_cloud_pub_ = this->side_point_cloud_pub_]()
@@ -243,7 +243,7 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
                                                         ); },
                                                 side_point_cloud_callback_group
                                                );
-    /*side_imu_timer_ = create_wall_timer(40ms, [this,
+    side_imu_timer_ = create_wall_timer(40ms, [this,
                                                 &imu_stream = this->side_imu_stream,
                                                 &imu_burst_msg = this->side_imu_burst_msg,
                                                 &avg_imu_msg = this->side_avg_imu_msg,
@@ -256,11 +256,11 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
                                                     imu_burst_pub_,
                                                     avg_imu_pub_
                                                 ); },
-                                        side_imu_callback_group
-                                       );  */
+                                        bottom_imu_callback_group
+                                       );
                                       
-    /*
-    bottom_point_cloud_timer_ = create_wall_timer(100ms, [this,
+    
+    bottom_point_cloud_timer_ = create_wall_timer(20ms, [this,
                                                          bottom_point_cloud_stream = this->bottom_point_cloud_stream, 
                                                          bottom_point_cloud_msg = this->bottom_point_cloud_msg,
                                                          bottom_point_cloud_pub_ = this->bottom_point_cloud_pub_]()
@@ -269,9 +269,9 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
                                                             bottom_point_cloud_msg,
                                                             bottom_point_cloud_pub_
                                                          ); },
-                                                  bottom_callback_group
+                                                  bottom_point_cloud_callback_group
                                                  );
-    bottom_imu_timer_ = create_wall_timer(50ms, [this,
+    bottom_imu_timer_ = create_wall_timer(40ms, [this,
                                                   bottom_imu_stream = this->bottom_imu_stream,
                                                   bottom_imu_burst_msg = this->bottom_imu_burst_msg,
                                                   bottom_avg_imu_msg = this->bottom_avg_imu_msg,
@@ -285,7 +285,7 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
                                                     bottom_avg_imu_pub_
                                                   ); },
                                           bottom_callback_group
-                                         );   */
+                                         );
     // <---- Initialize publishers
 }
 
