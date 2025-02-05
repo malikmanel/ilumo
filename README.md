@@ -5,12 +5,15 @@ The ILUMO library contains ROS2 code for usage in the Independent Lunar Cave Map
 ## Description
 
 The ILUMO library consists of several ROS nodes for controlling the ILUMO robotic platform. Its main feature are the control nodes for sensorics (```ilumo_sensors```), specifically for:
+
 * Zed 2 Stereo Camera
 * Waveshare Long-wave IR Thermal Imaging Camera (USB version)
 * Blickfeld Cube 1 LiDAR Camera
-The relevant packages for control of the sensorics are directly incorporated into the ILUMO library, allowing for precise and low-level adjustments as needed. 
-As the LiDAR and stereo camera control is written in C++, real-time processing becomes easier to achieve, especially as both nodes have parallel processing for image data and internal sensor data (IMU, thermometer, etc.) enabled. This becomes uniquely relevant for the LiDAR, as the node is set up to handel two LiDAR cameras simultaneously.
+
+The relevant packages for control of the sensorics are directly incorporated into the ILUMO library, allowing for precise and low-level adjustments as needed. As the LiDAR and stereo camera control is written in C++, real-time processing becomes easier to achieve, especially as both nodes have parallel processing for image data and internal sensor data (IMU, thermometer, etc.) enabled. This becomes uniquely relevant for the LiDAR, as the node is set up to handel two LiDAR cameras simultaneously.
+
 The library also includes a node for PWM control using the pins on the Jetson Orin Nano Developer Kit (```ilumo_control```).  It is assumed that signals are being sent to a motor controller board using 4 PWM pins as input to control a motor and LED lights.  Although the LED lights can be replaced by another device, the Jetson Orin Nano only contains 3 PWM pins, meaning the second device can only be operated in a single direction.
+
 Furthermore, the library contains a urdf description of ILUMO as well as basic internal transforms (```ilumo_description```), custom messages and services (```ilumo_interfaces```), and a config and launch setup (```ilumo_startup```).
 
 
@@ -40,7 +43,7 @@ Installation:
 ### Executing program
 
 In new terminal:
-* . install/setup.bash (TODO: not bash if other terminal is used)
+* ```. install/setup.bash``` (TODO: not bash if other terminal is used)
 * Full startup: ```ros2 launch ilumo_startup ilumo.launch.py```
 * Single sensor: ```ros2 run ilum_sensors lidar_publisher / stereo_camera_publisher / thermal_camera_publisher.py```
 * PWM control: ```ros2 run ilumo_control pwm_controller.py```
