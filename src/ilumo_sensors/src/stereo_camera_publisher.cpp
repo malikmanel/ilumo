@@ -218,6 +218,11 @@ void StereoCameraPublisher::imageCallback()
         cv::Mat right_image = frameBGR(cv::Rect(frame.width/2, 0, frame.width/2, frame.height)).clone();
         // <---- Split image
 
+        // ----> Rotate image
+        cv::rotate(left_image, left_image, cv::ROTATE_90_CLOCKWISE);
+        cv::rotate(right_image, right_image, cv::ROTATE_90_CLOCKWISE);
+        // <---- Rotate image
+
         // ----> Preparing image messages
         std_msgs::msg::Header left_img_header;
         std_msgs::msg::Header right_img_header;
