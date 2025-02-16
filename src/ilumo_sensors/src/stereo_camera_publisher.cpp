@@ -5,6 +5,7 @@
 #include <thread>
 #include <mutex>
 #include <chrono>
+#include <math.h>
 
 #include <sensor_msgs/fill_image.hpp>
 #include <cv_bridge/cv_bridge.h>
@@ -276,9 +277,9 @@ void StereoCameraPublisher::sensorCallback()
         imu_msg.linear_acceleration.x = imuData.aX;
         imu_msg.linear_acceleration.y = imuData.aY;
         imu_msg.linear_acceleration.z = imuData.aZ;
-        imu_msg.angular_velocity.x = imuData.gX;
-        imu_msg.angular_velocity.y = imuData.gY;
-        imu_msg.angular_velocity.z = imuData.gZ;
+        imu_msg.angular_velocity.x = imuData.gX * M_PI / 180;
+        imu_msg.angular_velocity.y = imuData.gY * M_PI / 180;
+        imu_msg.angular_velocity.z = imuData.gZ * M_PI / 180;
         // <---- Prepare IMU message
 
         // ---> Publish IMU message
