@@ -139,12 +139,10 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     side_point_cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("lidar_camera/side_camera/point_cloud", 10);
     side_imu_burst_pub_ = this->create_publisher<ilumo_interfaces::msg::ImuBurst>("lidar_camera/side_camera/imu_burst", 10);
     side_avg_imu_pub_ = this->create_publisher<sensor_msgs::msg::Imu>("lidar_camera/side_camera/avg_imu", 10);
-    side_temp_pub_ = this->create_publisher<sensor_msgs::msg::Temperature>("lidar_camera/side_camera/temperature", 10);
 
     bottom_point_cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("lidar_camera/bottom_camera/point_cloud", 10);
     bottom_imu_burst_pub_ = this->create_publisher<ilumo_interfaces::msg::ImuBurst>("lidar_camera/bottom_camera/imu_burst", 10);
     bottom_avg_imu_pub_ = this->create_publisher<sensor_msgs::msg::Imu>("lidar_camera/bottom_camera/avg_imu", 10);
-    bottom_temp_pub_ = this->create_publisher<sensor_msgs::msg::Temperature>("lidar_camera/bottom_camera/temperature", 10);
     // <---- Create the publishers
 
     // ----> Creating a connection to the device.

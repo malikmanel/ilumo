@@ -19,12 +19,10 @@ private:
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr side_point_cloud_pub_;
     rclcpp::Publisher<ilumo_interfaces::msg::ImuBurst>::SharedPtr side_imu_burst_pub_;
     rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr side_avg_imu_pub_;
-    rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr side_temp_pub_;
 
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr bottom_point_cloud_pub_;
     rclcpp::Publisher<ilumo_interfaces::msg::ImuBurst>::SharedPtr bottom_imu_burst_pub_;
     rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr bottom_avg_imu_pub_;
-    rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr bottom_temp_pub_;
 
     sensor_msgs::msg::PointCloud2::SharedPtr side_point_cloud_msg;
     ilumo_interfaces::msg::ImuBurst side_imu_burst_msg;
