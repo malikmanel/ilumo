@@ -409,9 +409,9 @@ void LiDARPublisher::imuCallback(std::shared_ptr<blickfeld::imu_stream> imu_stre
         single_imu_msg.angular_velocity.x = sample.angular_velocity(0);
         single_imu_msg.angular_velocity.y = sample.angular_velocity(1);
         single_imu_msg.angular_velocity.z = sample.angular_velocity(2);
-        single_imu_msg.linear_acceleration.x = sample.acceleration(0);
-        single_imu_msg.linear_acceleration.y = sample.acceleration(1);
-        single_imu_msg.linear_acceleration.z = sample.acceleration(2);
+        single_imu_msg.linear_acceleration.x = sample.acceleration(0) * 9.80665;
+        single_imu_msg.linear_acceleration.y = sample.acceleration(1) * 9.80665;
+        single_imu_msg.linear_acceleration.z = sample.acceleration(2) * 9.80665;
 
         // Adding IMU msg to burst msg
         imu_burst_msg.burst.push_back(single_imu_msg);
@@ -420,9 +420,9 @@ void LiDARPublisher::imuCallback(std::shared_ptr<blickfeld::imu_stream> imu_stre
         total_rx += sample.angular_velocity(0);
         total_ry += sample.angular_velocity(1);
         total_rz += sample.angular_velocity(2);
-        total_ax += sample.acceleration(0);
-        total_ay += sample.acceleration(1);
-        total_az += sample.acceleration(2);
+        total_ax += sample.acceleration(0) * 9.80665;
+        total_ay += sample.acceleration(1) * 9.80665;
+        total_az += sample.acceleration(2) * 9.80665;
 
         // Tracking message amount
         number_of_samples++;
