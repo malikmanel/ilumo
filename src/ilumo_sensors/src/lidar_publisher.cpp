@@ -282,7 +282,7 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
                                                     bottom_imu_burst_pub_,
                                                     bottom_avg_imu_pub_
                                                   ); },
-                                          bottom_callback_group
+                                          bottom_imu_callback_group
                                          );
     // <---- Initialize publishers
 }
