@@ -146,7 +146,6 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     // <---- Create the publishers
 
     // ----> Creating a connection to the device.
-    // TODO: Set correct ip and error logging for failure
     std::string side_scanner_ip = "192.168.26.2";
     // std::string bottom_scanner_ip = "192.168.26.3";
     side_scanner = blickfeld::scanner::connect(side_scanner_ip);
@@ -183,14 +182,14 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
 
 	scan_pattern = side_scanner->fill_scan_pattern(scan_pattern);
 	side_scanner->set_scan_pattern(scan_pattern);
-    bottom_scanner->set_scan_pattern(scan_pattern);
+    //bottom_scanner->set_scan_pattern(scan_pattern);
     // <---- Set the scanner parameters
 
     // ----> Create a pointcloud stream object to receive pointclouds
 	side_point_cloud_stream = side_scanner->get_point_cloud_stream();
     side_imu_stream = side_scanner->get_imu_stream();
-    bottom_point_cloud_stream = side_scanner->get_point_cloud_stream();
-    bottom_imu_stream = bottom_scanner->get_imu_stream();
+    //bottom_point_cloud_stream = side_scanner->get_point_cloud_stream();
+    //bottom_imu_stream = bottom_scanner->get_imu_stream();
     // <---- Create a pointcloud stream object to receive pointclouds
 
     // ----> Prepare LiDAR messages
@@ -198,23 +197,19 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
     makePointCloudMessage(side_point_cloud_msg);
     side_imu_burst_msg = ilumo_interfaces::msg::ImuBurst();
     side_avg_imu_msg = sensor_msgs::msg::Imu();
-    side_temp_msg = sensor_msgs::msg::Temperature();
 
     bottom_point_cloud_msg = std::make_shared<sensor_msgs::msg::PointCloud2>();
     makePointCloudMessage(bottom_point_cloud_msg);
     bottom_imu_burst_msg = ilumo_interfaces::msg::ImuBurst();
     bottom_avg_imu_msg = sensor_msgs::msg::Imu();
-    bottom_temp_msg = sensor_msgs::msg::Temperature();
 
     side_point_cloud_msg->header.frame_id = "lidar_side";
     side_imu_burst_msg.frame_id = "lidar_side";
     side_avg_imu_msg.header.frame_id = "lidar_side";
-    side_temp_msg.header.frame_id ="lidar_side";
 
     bottom_point_cloud_msg->header.frame_id = "lidar_bottom";
     bottom_imu_burst_msg.frame_id = "lidar_bottom";
     bottom_avg_imu_msg.header.frame_id = "lidar_bottom";
-    bottom_temp_msg.header.frame_id ="lidar_bottom";
     // <---- Prepare LiDAR messages
 
     // ----> Set previous timestamps to calculate frequency (debugging)
@@ -254,10 +249,10 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
                                                     imu_burst_pub_,
                                                     avg_imu_pub_
                                                 ); },
-                                        bottom_imu_callback_group
+                                        side_imu_callback_group
                                        );
                                       
-    
+    /*
     bottom_point_cloud_timer_ = create_wall_timer(20ms, [this,
                                                          bottom_point_cloud_stream = this->bottom_point_cloud_stream, 
                                                          bottom_point_cloud_msg = this->bottom_point_cloud_msg,
@@ -283,7 +278,7 @@ LiDARPublisher::LiDARPublisher(const std::string& name) : Node(name)
                                                     bottom_avg_imu_pub_
                                                   ); },
                                           bottom_imu_callback_group
-                                         );
+                                         );*/
     // <---- Initialize publishers
 }
 
