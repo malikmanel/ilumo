@@ -1,5 +1,4 @@
 # Code based on this: https://forums.developer.nvidia.com/t/pwm-not-functioning-on-pins-32-and-33/283373
-# Currently based on the TB6612FNG Dual H-Bridge
 
 import rclpy
 from rclpy.node import Node
