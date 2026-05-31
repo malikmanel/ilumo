@@ -21,8 +21,7 @@ Furthermore, the library contains a urdf description of ILUMO as well as basic i
 
 ### Dependencies
 
-* 
-* Linux 22.xx
+* Ubuntu 22.04
 
 ### Installing
 
