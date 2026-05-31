@@ -42,7 +42,7 @@ Installation:
 ### Executing program
 
 In new terminal:
-* ```. install/setup.bash``` (TODO: not bash if other terminal is used)
+* ```. install/setup.bash```
 * Full startup: ```ros2 launch ilumo_startup ilumo.launch.py```
 * Single sensor: ```ros2 run ilum_sensors lidar_publisher / stereo_camera_publisher / thermal_camera_publisher.py```
 * PWM control: ```ros2 run ilumo_control pwm_controller.py```
