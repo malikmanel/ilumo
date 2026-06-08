@@ -22,15 +22,16 @@ Furthermore, the library contains a urdf description of ILUMO as well as basic i
 ### Dependencies
 
 * Ubuntu 22.04
+* ROS 2 Humble
 
 ### Installing
 
 Pre-installation:
-* If motor/LED control is used: Setup Jetson pins (TODO: LINK)
+* If motor/LED control is used: Setup Jetson pins (see [jetson-gpio GitHub](https://github.com/NVIDIA/jetson-gpio))
 * If LiDAR is used: Ensure the static IP matches the IPs defined in the LiDAR control node
 
 ROS2 Setup:
-* TODO
+* See [ROS 2 Humble Docs](https://docs.ros.org/en/humble/Installation.html)
 
 Installation:
 * Clone repository
@@ -52,27 +53,16 @@ In new terminal:
 * Sensor and camera output can be visualized using ```ros2 run rqt_gui rqt_gui```
 * LiDAR data and, ILUMO transforms and meshes can be visualized using ```ros2 run rviz2 rviz2```
 
-## Help
-
-Any advise for common problems or issues.
-```
-command to run if program contains helper info
-```
-
 ## Author
 
 * Malik-Manel Hashim (they/them)
-* TU Berlin mail: m.hashim@campus.tu-berlin.de (Not available after 03/2025)
+* LUP mail: malikmanel.hashim@lup-umwelt.de
 * [ResearchGate](https://www.researchgate.net/profile/Malik-Manel-Hashim)
 
 ## Version History
 
 * 0.1
     * Initial Release
-
-## License
-
-This project is licensed under the [NAME HERE] License - see the LICENSE.md file for details
 
 ## Acknowledgments
 
