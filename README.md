@@ -56,7 +56,6 @@ In new terminal:
 ## Author
 
 * Malik-Manel Hashim (they/them)
-* LUP mail: malikmanel.hashim@lup-umwelt.de
 * [ResearchGate](https://www.researchgate.net/profile/Malik-Manel-Hashim)
 
 ## Version History
